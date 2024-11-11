@@ -1,0 +1,1261 @@
+---
+title: "MetaCycle"
+author: "Lingling Wen"
+date: "2024-11-05"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0. Introduction
+
+MetaCycle is an R package for evaluating periodicity in large scale time-series datasets. This package provides two functions- `meta2d` and `meta3d`. 
+
+For analyzing time-series datasets without individual information, **meta2d** is suggested, which incorporates *ARSER*, *JTK_CYCLE* and *Lomb-Scargle* in the detection of interested rhythms. 
+
+For analyzing time-series datasets with individual information, **meta3d** is suggested, which takes use of any one of these three methods to analyze time-series data individual by individual and gives out integrated values based on analysis result of each individual.
+
+[Tutorials](https://cran.r-project.org/web/packages/MetaCycle/vignettes/implementation.html)
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(here)
+library(MetaCycle)
+library(edgeR)
+library(cowplot)
+here()
+```
+
+```{r}
+# see detail introduction and associated application examples about meta2d or meta3d
+?meta2d
+?meta3d
+```
+
+# 1. prepare required data
+
+## 1.1 group information
+```{r}
+metadata <- read.csv(here("edgeR_key_labelSwapped.csv"))  
+#edgeR_key includes sample name (name), condition, ZT, and organ
+head(metadata)
+```
+
+Extract group info for each organ in each condition for later use.
+```{r}
+group.anther.cond16 = metadata %>% filter(condition == "16", organ == "Anther")
+group.anther.cond14 = metadata %>% filter(condition == "14", organ == "Anther")
+
+
+group.ovary.cond16 = metadata %>% filter(condition == "16", organ == "Ovary")
+group.ovary.cond14 = metadata %>% filter(condition == "14", organ == "Ovary")
+group.ovary.condDD = metadata %>% filter(condition == "DD", organ == "Ovary")
+
+group.style.cond16 = metadata %>% filter(condition == "16", organ == "Style")
+group.style.cond14 = metadata %>% filter(condition == "14", organ == "Style")
+group.style.condDD = metadata %>% filter(condition == "DD", organ == "Style")
+```
+
+## 1.2 row count data contains DD condition
+```{r}
+rawCounts = read.csv(here("4_WGCNA/data_input/counts_combined_R1_20240410.csv"))
+rawCounts = column_to_rownames(rawCounts, var = "X")
+rawCounts[1:5,1:5]
+```
+
+```{r}
+# check if row count dataset column names match with sample info table `name` column
+all.equal(colnames(rawCounts), metadata$name)
+```
+
+## 1.3 normalize DD condition raw counts
+
+### anther
+```{r}
+# subset data for desired condition and organ
+group.anther.condDD = metadata %>% filter(condition == "DD", organ == "Anther")
+
+input.anther.condDD = rawCounts %>% dplyr::select(all_of(group.anther.condDD$name))
+dim(input.anther.condDD) # 46480,96
+head(input.anther.condDD) 
+```
+
+
+```{r}
+all.equal(colnames(input.anther.condDD), group.anther.condDD$name)
+# create a DGEList object
+dge.anther.condDD <- DGEList(counts = input.anther.condDD, group = group.anther.condDD$group)
+head(dge.anther.condDD$samples)
+```
+
+```{r}
+# design matrix
+design.anther.condDD <- model.matrix(~0+group, data = group.anther.condDD)
+rownames(design.anther.condDD) <- group.anther.condDD$name
+```
+
+```{r }
+# filtering low expressed genes
+keep.anther.condDD <- filterByExpr(dge.anther.condDD, design.anther.condDD)
+table(keep.anther.condDD)
+head(keep.anther.condDD)
+```
+
+```{r}
+# extract remained genes
+dge.keep.anther.condDD <- dge.anther.condDD[keep.anther.condDD, , keep.lib.sizes=FALSE]
+head(dge.keep.anther.condDD)
+```
+
+```{r}
+# calculate normalization factors
+dge.nor.anther.condDD <- calcNormFactors(dge.keep.anther.condDD, method = "TMM")
+```
+
+```{r}
+# Log 2 normalized count data for downstream processing
+cpm.log.anther.condDD <- cpm(dge.nor.anther.condDD, log = T, normalized.lib.sizes = T) %>%
+  data.frame() %>%
+  rownames_to_column(var = "geneID")
+# column_to_rownames(anther_cpm_log, var = "geneID")
+cpm.log.anther.condDD[1:5,1:5]
+
+write.csv(cpm.log.anther.condDD, here("5_MetaCycle/input_data/anther_condDD_cpmLog_filterByExpr_20241104.csv"),row.names = F)
+```
+
+
+```{r}
+cpm.anther.condDD <- cpm(dge.nor.anther.condDD, log = F) %>% data.frame() %>% rownames_to_column(var = "geneID")
+cpm.anther.condDD[1:5,1:5]
+
+write.csv(cpm.anther.condDD, here("5_MetaCycle/input_data/anther_condDD_cpm_filterByExpr_20241104.csv"),row.names = F)
+```
+
+### ovary
+```{r}
+# subset data for desired condition and organ
+group.ovary.condDD = metadata %>% filter(condition == "DD", organ == "Ovary")
+
+input.ovary.condDD = rawCounts %>% dplyr::select(all_of(group.ovary.condDD$name))
+dim(input.ovary.condDD) # 46480,96
+head(input.ovary.condDD) 
+```
+
+
+```{r}
+# create a DGEList object
+all.equal(colnames(input.ovary.condDD), group.ovary.condDD$name)
+dge.ovary.condDD <- DGEList(counts = input.ovary.condDD, group = group.ovary.condDD$group)
+head(dge.ovary.condDD$samples)
+```
+
+```{r}
+# design matrix
+design.ovary.condDD <- model.matrix(~0+group, data = group.ovary.condDD)
+rownames(design.ovary.condDD) <- group.ovary.condDD$name
+```
+
+```{r }
+# filtering low expressed genes
+keep.ovary.condDD <- filterByExpr(dge.ovary.condDD, design.ovary.condDD)
+table(keep.ovary.condDD)
+head(keep.ovary.condDD)
+```
+
+```{r}
+# extract remained genes
+dge.keep.ovary.condDD <- dge.ovary.condDD[keep.ovary.condDD, , keep.lib.sizes=FALSE]
+head(dge.keep.ovary.condDD)
+```
+
+```{r}
+# calculate normalization factors
+dge.nor.ovary.condDD <- calcNormFactors(dge.keep.ovary.condDD, method = "TMM")
+```
+
+```{r}
+# Log 2 normalized count data for downstream processing
+cpm.log.ovary.condDD <- cpm(dge.nor.ovary.condDD, log = T, normalized.lib.sizes = T) %>%
+  data.frame() %>%
+  rownames_to_column(var = "geneID")
+# column_to_rownames(ovary_cpm_log, var = "geneID")
+cpm.log.ovary.condDD[1:5,1:5]
+
+write.csv(cpm.log.ovary.condDD, here("5_MetaCycle/input_data/ovary_condDD_cpmLog_filterByExpr_20241104.csv"),row.names = F)
+```
+
+
+```{r}
+cpm.ovary.condDD <- cpm(dge.nor.ovary.condDD, log = F) %>% data.frame() %>% rownames_to_column(var = "geneID")
+write.csv(cpm.ovary.condDD, here("5_MetaCycle/input_data/ovary_condDD_cpm_filterByExpr_20241104.csv"),row.names = F)
+```
+
+### style
+```{r}
+# subset data for desired condition and organ
+group.style.condDD = metadata %>% filter(condition == "DD", organ == "Style")
+
+input.style.condDD = rawCounts %>% dplyr::select(all_of(group.style.condDD$name))
+dim(input.style.condDD) # 46480,96
+head(input.style.condDD) 
+```
+
+
+```{r}
+# create a DGEList object
+all.equal(colnames(input.style.condDD), group.style.condDD$name)
+dge.style.condDD <- DGEList(counts = input.style.condDD, group = group.style.condDD$group)
+head(dge.style.condDD$samples)
+```
+
+```{r}
+# design matrix
+design.style.condDD <- model.matrix(~0+group, data = group.style.condDD)
+rownames(design.style.condDD) <- group.style.condDD$name
+```
+
+```{r }
+# filtering low expressed genes
+keep.style.condDD <- filterByExpr(dge.style.condDD, design.style.condDD)
+table(keep.style.condDD)
+head(keep.style.condDD)
+```
+
+```{r}
+# extract remained genes
+dge.keep.style.condDD <- dge.style.condDD[keep.style.condDD, , keep.lib.sizes=FALSE]
+head(dge.keep.style.condDD)
+```
+
+```{r}
+# calculate normalization factors
+dge.nor.style.condDD <- calcNormFactors(dge.keep.style.condDD, method = "TMM")
+```
+
+```{r}
+# Log 2 normalized count data for downstream processing
+cpm.log.style.condDD <- cpm(dge.nor.style.condDD, log = T, normalized.lib.sizes = T) %>%
+  data.frame() %>%
+  rownames_to_column(var = "geneID")
+# column_to_rownames(style_cpm_log, var = "geneID")
+cpm.log.style.condDD[1:5,1:5]
+
+write.csv(cpm.log.style.condDD, here("5_MetaCycle/input_data/style_condDD_cpmLog_filterByExpr_20241104.csv"),row.names = F)
+```
+
+
+```{r}
+cpm.style.condDD <- cpm(dge.nor.style.condDD, log = F) %>% data.frame() %>% rownames_to_column(var = "geneID")
+cpm.style.condDD[1:5,1:5]
+
+write.csv(cpm.style.condDD, here("5_MetaCycle/input_data/style_condDD_cpm_filterByExpr_20241104.csv"),row.names = F)
+```
+
+## 1.4 import cpm of 3 organs with cond14 and cond16 together, respectively
+```{r}
+cpm.anther = read.csv(here("5_MetaCycle/input_data/anther_cpm_filterByExpr_20240702.csv"))
+cpm.ovary = read.csv(here("5_MetaCycle/input_data/ovary_cpm_filterByExpr_20240702.csv"))
+cpm.style = read.csv(here("5_MetaCycle/input_data/style_cpm_filterByExpr_20240702.csv"))
+
+dim(cpm.anther)
+dim(cpm.ovary)
+dim(cpm.style)
+```
+
+## 1.5 cpm of 3 organs in DD condition
+```{r}
+cpm.anther.condDD = read.csv(here("5_MetaCycle/input_data/anther_condDD_cpm_filterByExpr_20241104.csv"))
+cpm.ovary.condDD = read.csv(here("5_MetaCycle/input_data/ovary_condDD_cpm_filterByExpr_20241104.csv"))
+cpm.style.condDD = read.csv(here("5_MetaCycle/input_data/style_condDD_cpm_filterByExpr_20241104.csv"))
+```
+
+
+# 2.meta2d (run in console)
+
+From Stacey's email:
+
+**the uneven sampling of your ovary samples complicates things such that MetaCycle would only use the LS algorithm.  But it might be interesting to see how it performs compared to the CS and JTK-cycle analysis you’ve already done. One point mentioned in the above vignette is that our dataset is pretty sparsely sampled and low resolution.  We shouldn’t expect to get very accurate estimates of period or phase on a per gene basis.  (However, I think general comparisons of trends between organs should be OK).**
+
+
+**meta2d()** and **meta3d()** can only run in console, so below scripts will be run in a separate R script file named **meta2d**.
+
+```{r}
+timepoints = rep(seq(12, 60, by=4),each = 2)
+meta2d(infile = here("anther_condDD_cpm_filterByExpr_20241104.csv"), 
+       outdir = "metaout", 
+       filestyle = "csv", 
+       timepoints = timepoints, 
+       minper = 24, maxper = 24,
+       cycMethod = c("ARS", "JTK", "LS"),
+       analysisStrategy = "auto", 
+       outputFile = TRUE,
+       outIntegration = "both", 
+       adjustPhase = "predictedPer",
+       combinePvalue = "fisher", 
+       weightedPerPha = FALSE, 
+       ARSmle = "auto",
+       ARSdefaultPer = 24, 
+       outRawData = TRUE, 
+       releaseNote = TRUE,
+       outSymbol = "rhythm_anther_condDD_", 
+       # parallelize = FALSE, 
+       nCores = 1, inDF = NULL)
+```
+
+## 2.1 general advice from the authors
+
+1. select all three methods under ‘cycMethod’ and MetaCycleApp will automaticlly select methods that could be used to analyze input dataset,
+
+2. **to search circadian profiles, it is better to set both ‘minper’ and ‘maxper’ as 24**,
+
+3. select ‘csv’ or ‘txt’ under ‘fileStyle’ according to input file,
+
+4. name outputs as ’meta2d_*’
+
+5. select ‘JTK’ and ‘LS’ in analyzing high-resolution datasets (for 2h over 2 days, ‘ARS’ has a higher false positive rate)
+
+## 2.2 addtional notes
+
+When sampling timepoints are even, I can specify the time using `seq()`.
+
+However, if the sampling timepoints are uneven or with missing values, `seq()` is not the best way to specify the time for columns in my opinion.
+
+So, before run **meta2d**, I need to add the timepoints to column name of the expression data for cond 14 and cond16.
+
+```{r}
+tp.anther.cond14 = paste0(group.anther.cond14$name, "_", group.anther.cond14$ZT,"hour")
+tp.anther.cond14
+```
+
+Then, Replace the column names with above characters.
+
+
+# =============================================================================
+# run below scripts after done with meta2d() in another R script file
+# =============================================================================
+
+
+# 3.Check the expression profiles of circadian transcripts (FDR < 0.05) and show their phase distribution
+
+
+## 3.1 number of circadian transcripts
+
+### 3.1.0 read in the output file
+
+```{r}
+cycData.anther.condDD = read.csv(here("5_MetaCycle/anther/condDD/meta2d_meta2d_anther_condDD_cpm_filterByExpr_20241104.csv"))
+cycData.ovary.condDD = read.csv(here("5_MetaCycle/ovary/condDD/meta2d_meta2d_ovary_condDD_cpm_filterByExpr_20241104.csv"))
+cycData.style.condDD = read.csv(here("5_MetaCycle/style/condDD/meta2d_meta2d_style_condDD_cpm_filterByExpr_20241104.csv"))
+```
+
+**Should I use cpm data or cpm log data?**
+
+### 3.1.1 anther
+
+#### filter by meta2d_BH.Q
+```{r}
+head(cycData.anther.condDD)
+colnames(cycData.anther.condDD)
+```
+
+```{r}
+# filter the data by meta2d_BH.Q < 0.05 by 'filter' function of dplyr
+cir.meta2d.anther.condDD <- filter(cycData.anther.condDD, meta2d_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.meta2d.anther.condDD)
+
+write.csv(cir.meta2d.anther.condDD, here("5_MetaCycle/anther/condDD/meta2d_sigCirGene_anther_condDD_20241107.csv"),row.names = FALSE)
+```
+
+#### filter by JTK_BH.Q
+```{r}
+# filter the data by JTK_BH.Q < 0.05 by 'filter' function of dplyr
+cir.JTK.anther.condDD <- filter(cycData.anther.condDD, JTK_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.JTK.anther.condDD)
+
+write.csv(cir.JTK.anther.condDD, here("5_MetaCycle/anther/condDD/JTK_sigCirGene_anther_condDD_20241107.csv"),row.names = FALSE)
+```
+
+#### filter by LS_BH.Q
+```{r}
+# filter the data by LS_BH.Q < 0.05 by 'filter' function of dplyr
+cir.LS.anther.condDD <- filter(cycData.anther.condDD, LS_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.LS.anther.condDD)
+
+write.csv(cir.LS.anther.condDD, here("5_MetaCycle/anther/condDD/LS_sigCirGene_anther_condDD_20241107.csv"),row.names = FALSE)
+```
+
+### 3.1.2 ovary
+
+#### filter by meta2d_BH.Q
+```{r}
+# filter the data by meta2d_BH.Q < 0.05 by 'filter' function of dplyr
+cir.meta2d.ovary.condDD <- filter(cycData.ovary.condDD, meta2d_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.meta2d.ovary.condDD)
+
+write.csv(cir.meta2d.ovary.condDD, here("5_MetaCycle/ovary/condDD/meta2d_sigCirGene_ovary_condDD_20241107.csv"),row.names = FALSE)
+```
+
+#### filter by JTK_BH.Q
+```{r}
+# filter the data by JTK_BH.Q < 0.05 by 'filter' function of dplyr
+cir.JTK.ovary.condDD <- filter(cycData.ovary.condDD, JTK_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.JTK.ovary.condDD)
+
+write.csv(cir.JTK.ovary.condDD, here("5_MetaCycle/ovary/condDD/JTK_sigCirGene_ovary_condDD_20241107.csv"),row.names = FALSE)
+```
+
+#### filter by LS_BH.Q
+
+```{r}
+# filter the data by LS_BH.Q < 0.05 by 'filter' function of dplyr
+cir.LS.ovary.condDD <- filter(cycData.ovary.condDD, LS_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.LS.ovary.condDD)
+
+write.csv(cir.LS.ovary.condDD, here("5_MetaCycle/ovary/condDD/LS_sigCirGene_ovary_condDD_20241107.csv"),row.names = FALSE)
+```
+
+### 3.1.3 style
+
+#### filter by meta2d_BH.Q
+```{r}
+# filter the data by meta2d_BH.Q < 0.05 by 'filter' function of dplyr
+cir.meta2d.style.condDD <- filter(cycData.style.condDD, meta2d_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.meta2d.style.condDD)
+
+write.csv(cir.meta2d.style.condDD, here("5_MetaCycle/style/condDD/meta2d_sigCirGene_style_condDD_20241107.csv"),row.names = FALSE)
+```
+
+#### filter by JTK_BH.Q
+```{r}
+# filter the data by JTK_BH.Q < 0.05 by 'filter' function of dplyr
+cir.JTK.style.condDD <- filter(cycData.style.condDD, JTK_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.JTK.style.condDD)
+
+
+write.csv(cir.JTK.style.condDD, here("5_MetaCycle/style/condDD/JTK_sigCirGene_style_condDD_20241107.csv"),row.names = FALSE)
+```
+
+#### filter by LS_BH.Q
+```{r}
+# filter the data by LS_BH.Q < 0.05 by 'filter' function of dplyr
+cir.LS.ovary.condDD <- filter(cycData.ovary.condDD, LS_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.LS.ovary.condDD)
+
+write.csv(cir.LS.ovary.condDD, here("5_MetaCycle/ovary/condDD/LS_sigCirGene_ovary_condDD_20241107.csv"),row.names = FALSE)
+```
+
+```{r}
+# filter the data by LS_BH.Q < 0.05 by 'filter' function of dplyr
+cir.LS.style.condDD <- filter(cycData.style.condDD, LS_BH.Q < 0.05)
+# see the number of circadian transcripts
+nrow(cir.LS.style.condDD)
+
+write.csv(cir.LS.style.condDD, here("5_MetaCycle/style/condDD/LS_sigCirGene_style_condDD_20241107.csv"),row.names = FALSE)
+```
+
+After check the intersection of circadian transcripts detected by `meta2d` using `ggvenn`, I want to know the expression pattern of those genes only detected by JTK.
+
+## 3.2 expression pattern of genes only detected by JTK
+
+### 3.2.1 anther
+
+```{r}
+head(cir.JTK.anther.condDD)
+head(cir.meta2d.anther.condDD)
+```
+
+```{r}
+# rhythmic genes only detected by JTK-CYCLE
+anther.condDD.JTK.only = anti_join(cir.JTK.anther.condDD, cir.meta2d.anther.condDD, by = "CycID")
+nrow(anther.condDD.JTK.only)
+
+write.csv(anther.condDD.JTK.only, here("5_MetaCycle/anther/condDD/JTK_ONLY_sig_anther_condDD_20241107.csv"),row.names = FALSE)
+```
+
+Look at individual traces for each gene specifically detected by JTK-CYCLE
+
+```{r}
+# extract the columns of expression data
+anther.condDD.JTKonly.expr = anther.condDD.JTK.only %>% select(CycID, starts_with("CV"))
+anther.condDD.JTKonly.expr
+```
+
+```{r}
+anther.condDD.JTKonly.expr.long = anther.condDD.JTKonly.expr %>% 
+  pivot_longer(cols = 2:ncol(anther.condDD.JTKonly.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+anther.condDD.JTKonly.expr.long1 = left_join(anther.condDD.JTKonly.expr.long, metadata, by = "name")
+head(anther.condDD.JTKonly.expr.long1)
+```
+
+```{r}
+anther.condDD.JTKonly.expr.sum <- anther.condDD.JTKonly.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+anther.condDD.JTKonly.expr.sum$ZT = factor(anther.condDD.JTKonly.expr.sum$ZT,
+                                   levels = levels(as.factor(anther.condDD.JTKonly.expr.sum$ZT)))
+```
+
+
+```{r}
+p_anther_condDD_JTK_only = list()
+for (i in unique(anther.condDD.JTKonly.expr.sum$CycID)){
+  p = anther.condDD.JTKonly.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_anther_condDD_JTK_only[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/anther/condDD/anther_condDD_sig_JTK_only.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_anther_condDD_JTK_only, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(anther.condDD.JTKonly.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+### 3.2.2 ovary
+
+```{r}
+head(cir.JTK.ovary.condDD)
+head(cir.meta2d.ovary.condDD)
+```
+
+```{r}
+# rhythmic genes only detected by JTK-CYCLE
+ovary.condDD.JTK.only = anti_join(cir.JTK.ovary.condDD, cir.meta2d.ovary.condDD, by = "CycID")
+nrow(ovary.condDD.JTK.only)
+
+write.csv(ovary.condDD.JTK.only, here("5_MetaCycle/ovary/condDD/JTK_ONLY_sig_ovary_condDD_20241107.csv"),row.names = FALSE)
+```
+
+Look at individual traces for each gene specifically detected by JTK-CYCLE
+
+```{r}
+# extract the columns of expression data
+ovary.condDD.JTKonly.expr = ovary.condDD.JTK.only %>% select(CycID, starts_with("CV"))
+ovary.condDD.JTKonly.expr
+```
+
+```{r}
+ovary.condDD.JTKonly.expr.long = ovary.condDD.JTKonly.expr %>% 
+  pivot_longer(cols = 2:ncol(ovary.condDD.JTKonly.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+ovary.condDD.JTKonly.expr.long1 = left_join(ovary.condDD.JTKonly.expr.long, metadata, by = "name")
+head(ovary.condDD.JTKonly.expr.long1)
+```
+
+```{r}
+ovary.condDD.JTKonly.expr.sum <- ovary.condDD.JTKonly.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+ovary.condDD.JTKonly.expr.sum$ZT = factor(ovary.condDD.JTKonly.expr.sum$ZT,
+                                   levels = levels(as.factor(ovary.condDD.JTKonly.expr.sum$ZT)))
+```
+
+
+```{r}
+p_ovary_condDD_JTK_only = list()
+for (i in unique(ovary.condDD.JTKonly.expr.sum$CycID)){
+  p = ovary.condDD.JTKonly.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_ovary_condDD_JTK_only[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/ovary/condDD/ovary_condDD_sig_JTK_only.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_ovary_condDD_JTK_only, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(ovary.condDD.JTKonly.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+### 3.2.3 style
+
+```{r}
+head(cir.JTK.style.condDD)
+head(cir.meta2d.style.condDD)
+```
+
+```{r}
+# rhythmic genes only detected by JTK-CYCLE
+style.condDD.JTK.only = anti_join(cir.JTK.style.condDD, cir.meta2d.style.condDD, by = "CycID")
+nrow(style.condDD.JTK.only)
+
+write.csv(style.condDD.JTK.only, here("5_MetaCycle/style/condDD/JTK_ONLY_sig_style_condDD_20241107.csv"),row.names = FALSE)
+```
+
+Look at individual traces for each gene specifically detected by JTK-CYCLE
+
+```{r}
+# extract the columns of expression data
+style.condDD.JTKonly.expr = style.condDD.JTK.only %>% select(CycID, starts_with("CV"))
+style.condDD.JTKonly.expr
+```
+
+```{r}
+style.condDD.JTKonly.expr.long = style.condDD.JTKonly.expr %>% 
+  pivot_longer(cols = 2:ncol(style.condDD.JTKonly.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+style.condDD.JTKonly.expr.long1 = left_join(style.condDD.JTKonly.expr.long, metadata, by = "name")
+head(style.condDD.JTKonly.expr.long1)
+```
+
+```{r}
+style.condDD.JTKonly.expr.sum <- style.condDD.JTKonly.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+style.condDD.JTKonly.expr.sum$ZT = factor(style.condDD.JTKonly.expr.sum$ZT,
+                                   levels = levels(as.factor(style.condDD.JTKonly.expr.sum$ZT)))
+```
+
+
+```{r}
+p_style_condDD_JTK_only = list()
+for (i in unique(style.condDD.JTKonly.expr.sum$CycID)){
+  p = style.condDD.JTKonly.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_style_condDD_JTK_only[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/style/condDD/style_condDD_sig_JTK_only.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_style_condDD_JTK_only, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(style.condDD.JTKonly.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+
+## 3.3 expression pattern of genes only detected by meta2d
+
+### 3.3.1 anther
+
+```{r}
+head(cir.meta2d.anther.condDD)
+head(cir.JTK.anther.condDD)
+```
+
+```{r}
+# rhythmic genes only detected by meta2d-CYCLE
+anther.condDD.meta2d.only = anti_join(cir.meta2d.anther.condDD, cir.JTK.anther.condDD, by = "CycID") # Keep elements only in A
+nrow(anther.condDD.meta2d.only)
+
+write.csv(anther.condDD.meta2d.only, here("5_MetaCycle/anther/condDD/meta2d_ONLY_sig_anther_condDD_20241107.csv"),row.names = FALSE)
+```
+
+Look at individual traces for each gene specifically detected by meta2d-CYCLE
+
+```{r}
+# extract the columns of expression data
+anther.condDD.meta2donly.expr = anther.condDD.meta2d.only %>% select(CycID, starts_with("CV"))
+anther.condDD.meta2donly.expr
+```
+
+```{r}
+anther.condDD.meta2donly.expr.long = anther.condDD.meta2donly.expr %>% 
+  pivot_longer(cols = 2:ncol(anther.condDD.meta2donly.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+anther.condDD.meta2donly.expr.long1 = left_join(anther.condDD.meta2donly.expr.long, metadata, by = "name")
+head(anther.condDD.meta2donly.expr.long1)
+```
+
+```{r}
+anther.condDD.meta2donly.expr.sum <- anther.condDD.meta2donly.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+anther.condDD.meta2donly.expr.sum$ZT = factor(anther.condDD.meta2donly.expr.sum$ZT,
+                                   levels = levels(as.factor(anther.condDD.meta2donly.expr.sum$ZT)))
+```
+
+
+```{r}
+p_anther_condDD_meta2d_only = list()
+for (i in unique(anther.condDD.meta2donly.expr.sum$CycID)){
+  p = anther.condDD.meta2donly.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_anther_condDD_meta2d_only[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/anther/condDD/anther_condDD_sig_meta2d_only.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_anther_condDD_meta2d_only, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(anther.condDD.meta2donly.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+### 3.3.2 ovary
+
+```{r}
+head(cir.meta2d.ovary.condDD)
+head(cir.JTK.ovary.condDD)
+```
+
+```{r}
+# rhythmic genes only detected by meta2d-CYCLE
+ovary.condDD.meta2d.only = anti_join(cir.meta2d.ovary.condDD, cir.JTK.ovary.condDD, by = "CycID") # Keep elements only in A
+nrow(ovary.condDD.meta2d.only)
+
+write.csv(ovary.condDD.meta2d.only, here("5_MetaCycle/ovary/condDD/meta2d_ONLY_sig_ovary_condDD_20241107.csv"),row.names = FALSE)
+```
+
+Look at individual traces for each gene specifically detected by meta2d-CYCLE
+
+```{r}
+# extract the columns of expression data
+ovary.condDD.meta2donly.expr = ovary.condDD.meta2d.only %>% select(CycID, starts_with("CV"))
+ovary.condDD.meta2donly.expr
+```
+
+```{r}
+ovary.condDD.meta2donly.expr.long = ovary.condDD.meta2donly.expr %>% 
+  pivot_longer(cols = 2:ncol(ovary.condDD.meta2donly.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+ovary.condDD.meta2donly.expr.long1 = left_join(ovary.condDD.meta2donly.expr.long, metadata, by = "name")
+head(ovary.condDD.meta2donly.expr.long1)
+```
+
+```{r}
+ovary.condDD.meta2donly.expr.sum <- ovary.condDD.meta2donly.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+ovary.condDD.meta2donly.expr.sum$ZT = factor(ovary.condDD.meta2donly.expr.sum$ZT,
+                                   levels = levels(as.factor(ovary.condDD.meta2donly.expr.sum$ZT)))
+```
+
+
+```{r}
+p_ovary_condDD_meta2d_only = list()
+for (i in unique(ovary.condDD.meta2donly.expr.sum$CycID)){
+  p = ovary.condDD.meta2donly.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_ovary_condDD_meta2d_only[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/ovary/condDD/ovary_condDD_sig_meta2d_only.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_ovary_condDD_meta2d_only, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(ovary.condDD.meta2donly.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+### 3.3.3 style
+
+```{r}
+head(cir.meta2d.style.condDD)
+head(cir.JTK.style.condDD)
+```
+
+```{r}
+# rhythmic genes only detected by meta2d-CYCLE
+style.condDD.meta2d.only = anti_join(cir.meta2d.style.condDD, cir.JTK.style.condDD, by = "CycID") # Keep elements only in A
+nrow(style.condDD.meta2d.only)
+
+write.csv(style.condDD.meta2d.only, here("5_MetaCycle/style/condDD/meta2d_ONLY_sig_style_condDD_20241107.csv"),row.names = FALSE)
+```
+
+Look at individual traces for each gene specifically detected by meta2d-CYCLE
+
+```{r}
+# extract the columns of expression data
+style.condDD.meta2donly.expr = style.condDD.meta2d.only %>% select(CycID, starts_with("CV"))
+style.condDD.meta2donly.expr
+```
+
+```{r}
+style.condDD.meta2donly.expr.long = style.condDD.meta2donly.expr %>% 
+  pivot_longer(cols = 2:ncol(style.condDD.meta2donly.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+style.condDD.meta2donly.expr.long1 = left_join(style.condDD.meta2donly.expr.long, metadata, by = "name")
+head(style.condDD.meta2donly.expr.long1)
+```
+
+```{r}
+style.condDD.meta2donly.expr.sum <- style.condDD.meta2donly.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+style.condDD.meta2donly.expr.sum$ZT = factor(style.condDD.meta2donly.expr.sum$ZT,
+                                   levels = levels(as.factor(style.condDD.meta2donly.expr.sum$ZT)))
+```
+
+
+```{r}
+p_style_condDD_meta2d_only = list()
+for (i in unique(style.condDD.meta2donly.expr.sum$CycID)){
+  p = style.condDD.meta2donly.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_style_condDD_meta2d_only[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/style/condDD/style_condDD_sig_meta2d_only.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_style_condDD_meta2d_only, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(style.condDD.meta2donly.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+## 3.4 expression pattern of meta2d cir genes
+
+### 3.4.1 anther
+
+```{r}
+# extract the columns of expression data
+anther.condDD.meta2d.expr = cir.meta2d.anther.condDD %>% select(CycID, starts_with("CV"))
+anther.condDD.meta2d.expr
+```
+
+```{r}
+anther.condDD.meta2d.expr.long = anther.condDD.meta2d.expr %>% 
+  pivot_longer(cols = 2:ncol(anther.condDD.meta2d.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+anther.condDD.meta2d.expr.long1 = left_join(anther.condDD.meta2d.expr.long, metadata, by = "name")
+head(anther.condDD.meta2d.expr.long1)
+```
+
+```{r}
+anther.condDD.meta2d.expr.sum <- anther.condDD.meta2d.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+anther.condDD.meta2d.expr.sum$ZT = factor(anther.condDD.meta2d.expr.sum$ZT,
+                                   levels = levels(as.factor(anther.condDD.meta2d.expr.sum$ZT)))
+```
+
+
+```{r}
+p_anther_condDD_meta2d = list()
+for (i in unique(anther.condDD.meta2d.expr.sum$CycID)){
+  p = anther.condDD.meta2d.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_anther_condDD_meta2d[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/anther/condDD/anther_condDD_sig_meta2d_all.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_anther_condDD_meta2d, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(anther.condDD.meta2d.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+### 3.4.2 ovary
+
+```{r}
+# extract the columns of expression data
+ovary.condDD.meta2d.expr = cir.meta2d.ovary.condDD %>% select(CycID, starts_with("CV"))
+ovary.condDD.meta2d.expr
+```
+
+```{r}
+ovary.condDD.meta2d.expr.long = ovary.condDD.meta2d.expr %>% 
+  pivot_longer(cols = 2:ncol(ovary.condDD.meta2d.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+ovary.condDD.meta2d.expr.long1 = left_join(ovary.condDD.meta2d.expr.long, metadata, by = "name")
+head(ovary.condDD.meta2d.expr.long1)
+```
+
+```{r}
+ovary.condDD.meta2d.expr.sum <- ovary.condDD.meta2d.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+ovary.condDD.meta2d.expr.sum$ZT = factor(ovary.condDD.meta2d.expr.sum$ZT,
+                                   levels = levels(as.factor(ovary.condDD.meta2d.expr.sum$ZT)))
+```
+
+
+```{r}
+p_ovary_condDD_meta2d = list()
+for (i in unique(ovary.condDD.meta2d.expr.sum$CycID)){
+  p = ovary.condDD.meta2d.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_ovary_condDD_meta2d[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/ovary/condDD/ovary_condDD_sig_meta2d_all.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_ovary_condDD_meta2d, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(ovary.condDD.meta2d.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+
+
+### 3.4.3 style
+
+```{r}
+# extract the columns of expression data
+style.condDD.meta2d.expr = cir.meta2d.style.condDD %>% select(CycID, starts_with("CV"))
+style.condDD.meta2d.expr
+```
+
+```{r}
+style.condDD.meta2d.expr.long = style.condDD.meta2d.expr %>% 
+  pivot_longer(cols = 2:ncol(style.condDD.meta2d.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+style.condDD.meta2d.expr.long1 = left_join(style.condDD.meta2d.expr.long, metadata, by = "name")
+head(style.condDD.meta2d.expr.long1)
+```
+
+```{r}
+style.condDD.meta2d.expr.sum <- style.condDD.meta2d.expr.long1 %>% 
+  group_by(CycID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+style.condDD.meta2d.expr.sum$ZT = factor(style.condDD.meta2d.expr.sum$ZT,
+                                   levels = levels(as.factor(style.condDD.meta2d.expr.sum$ZT)))
+```
+
+
+```{r}
+p_style_condDD_meta2d = list()
+for (i in unique(style.condDD.meta2d.expr.sum$CycID)){
+  p = style.condDD.meta2d.expr.sum %>% filter(CycID == i) %>% 
+    group_by(ZT, CycID) %>%
+    ggplot(aes(x=ZT, y = expression, group = CycID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = CycID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_style_condDD_meta2d[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/style/condDD/style_condDD_sig_meta2d_all.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_style_condDD_meta2d, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(style.condDD.meta2d.expr.sum$CycID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
+
+# 4. Run DD data with DiscoRhythm
+
+```{r}
+head(cpm.anther.condDD)
+head(cpm.ovary.condDD)
+head(cpm.style.condDD)
+```
+
+## 4.1 Anther
+```{r}
+# subset data of anther in condDD
+sample_anther_condDD_jtk = metadata %>% filter(condition == "DD") %>% filter(organ == "Anther")
+dim(sample_anther_condDD_jtk) # 26 rows, 14 timepoints
+head(sample_anther_condDD_jtk)
+```
+
+```{r}
+keep_col_anther_condDD_jtk = intersect(sample_anther_condDD_jtk$name, colnames(cpm.anther.condDD[,2:27]))
+
+cpm_anther_condDD_jtk = cpm.anther.condDD %>% dplyr::select(geneID,all_of(keep_col_anther_condDD_jtk))
+dim(cpm_anther_condDD_jtk) # 33847,43
+```
+
+```{r}
+head(cpm_anther_condDD_jtk)
+```
+
+```{r}
+all.equal(colnames(cpm_anther_condDD_jtk[,2:ncol(cpm_anther_condDD_jtk)]), sample_anther_condDD_jtk$name)
+```
+
+Rename column names to match the input format of DiscoRhythm.
+
+Names are expected to follow the pattern:
+  **Prefix Time*_Unique Id_Replicate Id**
+
+```{r}
+ID_anther_condDD_jtk = str_c(paste0("ZT"),sample_anther_condDD_jtk$ZT,"_",
+                         sample_anther_condDD_jtk$name,"_",
+                         sample_anther_condDD_jtk$rep)
+ID_anther_condDD_jtk
+```
+
+Replace the column names of *cpm.anther.condDD* with these new names.
+
+```{r}
+cpm_anther_condDD_jtk_new = cpm_anther_condDD_jtk %>% 
+  rename_with(~ID_anther_condDD_jtk, starts_with("CV")) %>% 
+  dplyr::rename(IDs = geneID)
+head(cpm_anther_condDD_jtk_new)
+```
+
+Save the data.
+```{r}
+write.csv(cpm_anther_condDD_jtk_new, here("5_MetaCycle/input_data/anther_condDD_forDiscoRhythm.csv"),row.names = F)
+```
+
+```{r}
+library(DiscoRhythm)
+
+input_anther_condDD_jtk = read.csv(here("5_MetaCycle/input_data/anther_condDD_forDiscoRhythm.csv"))
+disco_anther_condDD_jtk = discoBatch(indata=input_anther_condDD_jtk,
+  report=here::here("5_MetaCycle/anther/DiscoRhythm_discoBatch_anther_condDD_jtk.html"),
+  ncores=1,
+  main_per=24,
+  timeType="linear",
+  cor_threshold=3,
+  cor_method="pearson",
+  cor_threshType="sd",
+  pca_threshold=4,
+  pca_scale=FALSE,
+  pca_pcToCut=paste0("PC",seq_len(4)),
+  aov_method="None",
+  aov_pcut=0.05,
+  aov_Fcut=0,
+  avg_method="Median",
+  osc_method="JTK", # "CS", "JTK", "LS", "ARS"
+  osc_period=24)
+
+disco_anther_condDD_JTK = disco_anther_condDD_jtk$JTK %>% rownames_to_column(var = "geneID")
+nrow(disco_anther_condDD_JTK)
+```
+
+### significant rhythimc genes-JTK CYCLE
+
+```{r}
+# number of rhythmic genes detected by JTK
+disco_anther_condDD_JTK_sig = disco_anther_condDD_JTK %>% 
+  filter(qvalue <= 0.05)
+nrow(disco_anther_condDD_JTK_sig)
+
+write.csv(disco_anther_condDD_JTK_sig, here("5_MetaCycle/anther/condDD/anther_condDD_DiscoRhythm_JTK_Genes_sig.csv"),row.names = F)
+```
+
+### expression pattern of genes only detected by Disco-JTK
+
+```{r}
+head(cir.meta2d.anther.condDD)
+head(disco_anther_condDD_JTK_sig)
+```
+
+```{r}
+# rhythmic genes only detected by JTK-CYCLE
+anther.condDD.discoJTK.only = anti_join(disco_anther_condDD_JTK_sig, cir.meta2d.anther.condDD, by = c("geneID"="CycID"))
+nrow(anther.condDD.discoJTK.only)
+
+write.csv(anther.condDD.discoJTK.only, here("5_MetaCycle/anther/condDD/discoJTK_ONLY_sig_anther_condDD_20241107.csv"),row.names = FALSE)
+```
+
+Look at individual traces for each gene specifically detected by JTK-CYCLE
+
+```{r}
+# extract the columns of expression data
+anther.condDD.discoJTKonly.expr = left_join(
+  anther.condDD.discoJTK.only, cpm.anther.condDD,
+  by = "geneID"
+) %>% as.data.frame() %>% 
+  select(geneID, starts_with("CV"))
+```
+
+```{r}
+anther.condDD.discoJTKonly.expr.long = anther.condDD.discoJTKonly.expr %>% 
+  pivot_longer(cols = 2:ncol(anther.condDD.discoJTKonly.expr),
+               names_to = "name",
+               values_to = "cpm")
+```
+
+```{r}
+anther.condDD.discoJTKonly.expr.long1 = left_join(anther.condDD.discoJTKonly.expr.long, metadata, by = "name")
+head(anther.condDD.discoJTKonly.expr.long1)
+```
+
+```{r}
+anther.condDD.discoJTKonly.expr.sum <- anther.condDD.discoJTKonly.expr.long1 %>% 
+  group_by(geneID, ZT) %>%
+  summarize(expression = mean(cpm),
+            se = sd(cpm)/sqrt(n()))
+
+anther.condDD.discoJTKonly.expr.sum$ZT = factor(anther.condDD.discoJTKonly.expr.sum$ZT,
+                                   levels = levels(as.factor(anther.condDD.discoJTKonly.expr.sum$ZT)))
+```
+
+
+```{r}
+p_anther_condDD_discoJTK_only = list()
+for (i in unique(anther.condDD.discoJTKonly.expr.sum$geneID)){
+  p = anther.condDD.discoJTKonly.expr.sum %>% filter(geneID == i) %>% 
+    group_by(ZT, geneID) %>%
+    ggplot(aes(x=ZT, y = expression, group = geneID))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "lightyellow",alpha=0.4)+
+    # annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="grey",alpha=0.3)+
+    # annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = expression-se, ymax = expression+se,group = geneID), fill = "#D95F02",
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_anther_condDD_discoJTK_only[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("5_MetaCycle/anther/condDD/anther_condDD_sig_discoJTK_only.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_anther_condDD_discoJTK_only, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(anther.condDD.discoJTKonly.expr.sum$geneID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+
+dev.off()
+```
+
