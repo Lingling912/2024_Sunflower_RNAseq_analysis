@@ -1,0 +1,829 @@
+---
+title: "blockwise WGCNA: 2 conditions together"
+author: "Lingling Wen"
+date: "2024-10-22"
+output: 
+  html_document: 
+    keep_md: true
+    toc: true
+    css: ['css/theme-green.css','css/boxshadowproperties.css']
+bibliography: "bibliography.bib"
+link-citations: true
+csl: nature.csl
+---
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**In this analysis, I am going to do WGCNA with DEGs for each organ in each condition.**
+Input data is from reanalysed DEG output.
+
+
+# 1. load libraries
+
+```{r load-libraries, warning=FALSE,message=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(vsn)
+library(pspline)
+library(dplyr)
+library(clusterProfiler)
+library(WGCNA)
+library(here)
+here()
+```
+
+# ====part I===================
+# 2. data preparation
+
+## 2.1 Import metadata
+
+```{r metadata}
+metadata <- read.csv(here("edgeR_key_labelSwapped.csv"))  #edgeR_key includes sample name (name), condition, ZT, and organ
+head(metadata)
+```
+
+## 2.2 Input Data (change for each group)
+
+```{r}
+cpmlog = read.csv(here("4_WGCNA/data_input/style_cpmLog_filterByExpr_20240702.csv"))
+cpmlog[1:5,1:5]
+```
+
+
+```{r}
+library(readxl)
+
+## load cond16 DEG genes list from DEG timecourse analysis
+timecourse_deg = read_excel(here("3_DEG/edgeR_timecourse_reanalysis/style_trial2/cond16/results/style_cond16_sig_timecourseGenes_cubicRegDF3.xlsx"))
+head(timecourse_deg)
+```
+
+#============================
+
+## 2.3 filter sig DEG genes from expression data
+```{r}
+# filter the sig genes for expression data
+gene_sig = cpmlog %>% filter(X %in% timecourse_deg$geneID) %>% column_to_rownames(var = "X")
+gene_sig[1:3,1:3]
+```
+
+
+## 2.5 Input for WGCNA
+
+```{r}
+expr_sig = gene_sig %>% t()
+expr_sig[1:3,1:3]
+dim(expr_sig)
+```
+
+#===================================================================
+
+# 3. WGCNA (blockwise)
+
+## 3.1 Check data
+
+### 3.1.1 check missing values
+
+```{r check-missing-values-style}
+gsg <- goodSamplesGenes(expr_sig, verbose = 3)
+gsg$allOK 
+
+#By viewing the gsg list object you can see it contains 3 logical vectors (good genes, good samples and allOK). If you want to see if the function identified any possible outlier all you have to do is evaluate the allOK vector.
+
+# if not returning TRUE, remove genes and samples with too many missing values by running:
+
+if (!gsg$allOK) {
+  # Optionally, print the gene and sample names that were removed:
+  if (sum(!gsg$goodGenes) > 0)
+    printFlush(paste("Removing genes:", paste(names(expr_sig)[!gsg$goodGenes], collapse = ", ")))
+  if (sum(!gsg$goodSamples) > 0)
+    printFlush(paste("Removing samples:", paste(rownames(expr_sig)[!gsg$goodSamples], collapse = ", ")))
+  # Remove the offending genes and samples from the data:
+  expr_sig <- expr_sig[gsg_style_CV75$goodSamples, gsg_style_CV75$goodGenes]
+}
+
+summary(gsg)
+```
+
+### 3.1.2 check outliers samples
+
+```{r check-outlier-sampels-style,fig.width=15, fig.height=6}
+# cluster the samples by clusters
+sampleTree <- hclust(dist(expr_sig), method = "average")
+
+pdf(file = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/SampleClustering_style.pdf"), width = 15, height = 6)
+par(cex = 1)
+par(mar = c(0, 5, 2, 0))
+plot(sampleTree,
+  main = "Sample clustering to detect outliers - style",
+  sub = "",
+  xlab = "",
+  cex.lab = 1,
+  cex.axis = 1,
+  cex.main = 1)
+dev.off()
+
+plot(sampleTree,
+  main = "Sample clustering to detect outliers - style",
+  sub = "",
+  xlab = "",
+  cex.lab = 1,
+  cex.axis = 1,
+  cex.main = 1)
+```
+
+```{r pressure, echo=FALSE, fig.width=15, fig.height=8}
+# sample network based on squared Euclidean distance note that we
+# transpose the data
+A = adjacency(t(expr_sig), type = "distance")
+# this calculates the whole network connectivity
+k = as.numeric(apply(A, 2, sum)) - 1
+# standardized connectivity
+Z.k = scale(k)
+# Designate samples as outlying if their Z.k value is below the threshold
+thresholdZ.k = -5  # often -2.5
+
+# the color vector indicates outlyingness (red)
+outlierColor = ifelse(Z.k < thresholdZ.k, "red", "black")
+
+# calculate the cluster tree using flahsClust or hclust
+sample.Tree = hclust(as.dist(1 - A), method = "average")
+# Convert traits to a color representation: where red indicates high
+# values
+# traitColors = data.frame(numbers2colors(datTraits, signed = FALSE))
+# dimnames(traitColors)[[2]] = paste(names(datTraits), "C", sep = "")
+# datColors = data.frame(outlierC = outlierColor, traitColors)
+# Plot the sample dendrogram and the colors underneath.
+
+pdf(file=here::here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/plots/style_hclusterTree.pdf"), onefile=F, paper="special", width=15, height=8, bg="white", pointsize=12)
+plotDendroAndColors(sample.Tree, groupLabels = names(outlierColor),
+                    colors = outlierColor,
+                    main = "Sample dendrogram and trait heatmap")
+dev.off()
+plotDendroAndColors(sample.Tree, groupLabels = names(outlierColor), 
+                    colors = outlierColor, 
+                    main = "Sample dendrogram and trait heatmap")
+```
+
+
+## 3.3 choose soft power threshold
+
+```{r soft-threshold-styleCV75}
+allowWGCNAThreads()          # allow multi-threading (optional)
+#> Allowing multi-threading with up to 4 threads.
+
+# Choose a set of soft-thresholding powers
+powers = c(c(1:10), seq(from = 12, to = 20, by = 2))
+
+# Call the network topology analysis function
+sft = pickSoftThreshold(
+  expr_sig,             # <= Input data
+  dataIsExpr = TRUE,
+  blockSize = ncol(expr_sig),
+  corFnc = cor,
+  networkType = "signed hybrid",
+  powerVector = powers,
+  verbose = 3
+  )
+
+```
+
+```{r, fig.width = 9, fig.height=4.5}
+png(file = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/plots/sft_style.png"), width = 9, height = 4.5, units = "in", res = 300)
+par(mfrow = c(1,2));
+par(cex = 0.8);
+cex1 = 0.9
+
+plot(sft$fitIndices[, 1],
+     -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
+     xlab = "Soft Threshold (power)",
+     ylab = "Scale Free Topology Model Fit, signed hybrid R^2",
+     type = "n",
+     main = paste("Scale independence - style"))
+text(sft$fitIndices[, 1],
+     -sign(sft$fitIndices[, 3]) * sft$fitIndices[, 2],
+     labels = powers, cex = cex1, col = "red")
+# this line corresponds to using an R^2 cut-off of h
+abline(h = 0.85, col = "red")
+
+# Mean connectivity as a function of the soft-thresholding power
+plot(sft$fitIndices[, 1],
+     sft$fitIndices[, 5],
+     xlab = "Soft Threshold (power)",
+     ylab = "Mean Connectivity",
+     type = "n",
+     main = paste("Mean connectivity - style"))
+text(sft$fitIndices[, 1],
+     sft$fitIndices[, 5],
+     labels = powers,
+     cex = cex1, col = "red")
+dev.off()
+```
+
+## 3.4 construct the network
+
+```{r}
+# tune minModuleSize and mergeCutHeight, the bigger the value the less number of modules
+
+minModuleSize = 30
+picked_power=sft$powerEstimate # returns 4
+# returns the best power value; NA means I need to manually pick a threshold.
+
+cor <- WGCNA::cor
+net = blockwiseModules(expr_sig, 
+                       power = picked_power, 
+                       maxBlockSize = ncol(expr_sig),
+                       TOMType = "signed Nowick", 
+                       networkType = "signed hybrid",
+                       suppressNegativeTOM = TRUE,
+                       minModuleSize = minModuleSize,
+                       
+                       ## ==== Gene reassignment ===##
+                       # reassignThreshold = 0, 
+                       minCoreKME = 0.6,  
+                       minCoreKMESize = minModuleSize/3, 
+                       minKMEtoStay = 0.5, 
+                       
+                       ## ==== ##
+                       mergeCutHeight = 0.2, ## can change here
+                       numericLabels = TRUE, 
+                       pamRespectsDendro = FALSE,
+                       corType = "pearson", 
+                       deepSplit = 2,
+                       # maxPOutliers=maxPOutliers,
+                       # TOMDenom = "min",  
+                       # stabilityCriterion = "Individual fraction",
+                       
+                       ## ==save TOM matrix==##
+                       # saveTOMs=TRUE,  
+                       # saveTOMFileBase = here::here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/TOM_style_2cond"),
+                       # loadTOM = TRUE,
+                       verbose = 3, randomSeed=410)
+```
+
+#### save the results
+```{r}
+save(
+   net,
+   file = here::here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/network_style_2cond.RData"
+ ))
+# save for later use, just in case I will be interrupted somewhere
+```
+
+## 3.5 module clutering
+
+```{r}
+# 根据模块中基因数目的多少，降序排列，依次编号为 1-最大模块数。
+# **0 (grey)**表示**未**分入任何模块的基因。 
+table(net$colors)
+table(net$unmergedColors)
+
+## unmerged colors
+# Convert labels to colors for plotting
+unmergedLabels = net$unmergedColors
+unmergedColors = labels2colors(unmergedLabels)
+
+## merged colors
+# Rename to mergedColors
+mergedColors = labels2colors(net$colors)
+mergedLabels = net$colors
+```
+
+```{r}
+sizeGrWindow(12, 9)
+plotDendroAndColors(net$dendrograms[[1]],
+                    cbind(unmergedColors,mergedColors),
+                    c("Unmerged", " Merged (Cut=0.2)"),
+                    dendroLabels = FALSE, hang = 0.5,
+                    addGuide = TRUE, guideHang = 0.05,
+                    main = "Cluster Dendrogram - style 2cond"
+                    )
+```
+
+```{r plot-dendrogram-after-merged-only, fig.width=10, fig.height=6}
+pdf(file = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/plots/geneTree_merged_style_2cond.pdf"), width = 10, height = 6,pointsize=20)
+# png(file = here("4_WGCNA/m2_inputData_organSeparate_CV50/style/plots/geneTree_merged_style_2cond_cv50.png"), width = 12, height = 7,units = "in",res = 300) 
+
+par(cex = 1)
+par(mar = c(0, 6, 2, 0))
+
+# Merged Plot
+plotDendroAndColors(net$dendrograms[[1]],
+                    mergedColors,
+                    "Module colors \n (cut = 0.2)",
+                    dendroLabels = FALSE, hang = 0.5,
+                    addGuide = TRUE, guideHang = 0.05,
+                    main = "Cluster Dendrogram - style 2cond"
+                    )
+dev.off()
+
+sizeGrWindow(12, 9)
+plotDendroAndColors(net$dendrograms[[1]],
+                    mergedColors,
+                    "Module colors \n (cut = 0.2)",
+                    dendroLabels = FALSE, hang = 0.5,
+                    addGuide = TRUE, guideHang = 0.05,
+                    main = "Cluster Dendrogram - style 2cond"
+                    )
+```
+
+## 3.6 plot summary of genes per module
+
+### before merge
+```{r fig.width=20, fig.height=6}
+module_sum_beforeMerge <- unmergedColors %>% 
+  table() %>% 
+  as.data.frame() %>% 
+  dplyr::rename(Module='.', `No. of genes` = Freq)
+  
+module_sum_beforeMerge <- module_sum_beforeMerge[order(module_sum_beforeMerge$`No. of genes`, decreasing = T),]
+
+module_sum_beforeMerge$Module <- factor(module_sum_beforeMerge$Module, levels = module_sum_beforeMerge$Module)
+# module_sum %>% write_csv("TMM_CV75_man_genes_per_module.csv")
+
+png(file = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/plots/beforeMerge_moduleGenes_style_2cond.png"), width = 20, height = 6, units = "in",res = 300)
+par(cex = 1)
+par(mar = c(0, 5, 2, 0))
+
+plot_moduleSum_unmerged = module_sum_beforeMerge %>% 
+  ggplot(aes(x=as.factor(1:nrow(module_sum_beforeMerge)), y=`No. of genes`, fill = Module)) +
+  geom_col() + 
+  scale_y_continuous(n.breaks = 9, limits = c(0,5500)) +
+  scale_fill_manual(values = levels(module_sum_beforeMerge$Module), ) + # same color as assigned to the dendrogram above
+  labs(x = "Module ID", fill = "Module Name (before merge)", title = "Module genes summary (before merge) - style,2cond") +
+  geom_text(aes(label = `No. of genes`), vjust = -0.5,angle = 45,hjust = -0.25)+
+  # make legends to three columns
+  guides(fill = guide_legend(ncol = 3)) +
+  theme_bw()+
+  theme(axis.title = element_text(size = 16, colour = "black", face = "bold"),
+        axis.text = element_text(size = 16, colour = "black")
+        # legend.position = "bottom",
+        # legend.direction = "horizontal"
+        )
+plot_moduleSum_unmerged
+dev.off()
+
+plot_moduleSum_unmerged
+```
+
+### after merge
+```{r fig.width=14, fig.height=6}
+module_sum_afterMerge <- mergedColors %>% 
+  table() %>% 
+  as.data.frame() %>% 
+  dplyr::rename(Module='.', `No. of genes` = Freq)
+  
+module_sum_afterMerge <- module_sum_afterMerge[order(module_sum_afterMerge$`No. of genes`, decreasing = T),]
+
+module_sum_afterMerge$Module <- factor(module_sum_afterMerge$Module, levels = module_sum_afterMerge$Module)
+# module_sum %>% write_csv("TMM_CV75_man_genes_per_module.csv")
+
+png(file = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/plots/afterMerge_moduleGenes_style_2cond.png"), width = 14, height = 6, units = "in",res = 300)
+par(cex = 1)
+par(mar = c(0, 5, 2, 0))
+
+plot_moduleSum_merged = module_sum_afterMerge %>% 
+  ggplot(aes(x=as.factor(1:nrow(module_sum_afterMerge)), y=`No. of genes`, fill = Module)) +
+  geom_col() + 
+  scale_y_continuous(n.breaks = 9, limits = c(0,5500)) +
+  scale_fill_manual(values = levels(module_sum_afterMerge$Module), ) + # same color as assigned to the dendrogram above
+  labs(x = "Module ID", fill = "Module Name (after merge)", title = "Module genes summary (after merge) - style,2cond") +
+  geom_text(aes(label = `No. of genes`), vjust = -0.5,angle = 45,hjust = -0.25)+
+  # make legends to three columns
+  guides(fill = guide_legend(ncol = 2)) +
+  theme_bw()+
+  theme(axis.title = element_text(size = 16, colour = "black", face = "bold"),
+        axis.text = element_text(size = 16, colour = "black")
+        # legend.position = "bottom",
+        # legend.direction = "horizontal"
+        )
+plot_moduleSum_merged
+dev.off()
+
+plot_moduleSum_merged
+```
+
+## 3.7 eigengene expression across timepoints
+
+Add sample info to the MEs, then longer.
+```{r}
+MEs=net$MEs
+
+colnames(MEs) = paste0("ME", labels2colors(
+  as.numeric(str_replace_all(colnames(MEs),"ME",""))))
+MEs = orderMEs(MEs)
+MEs
+```
+
+```{r}
+eig = MEs %>% 
+  rownames_to_column(var = "name") %>% 
+  left_join(metadata, by = "name") %>%
+  pivot_longer(cols = 2:(dim(MEs)[2]+1), names_to = "module", values_to = "value") 
+# the values assigned to each eigengene represent the collapsed, combined, and normalized expression of the genes that make up each module.
+head(eig)
+```
+
+Average the expr for 3 biological reps now. 
+```{r}
+# separate by condition
+eig_mean = eig %>% 
+  group_by(module, ZT,condition) %>% 
+  dplyr::summarize(mean.expr = mean(value),
+                   se = sd(value)/sqrt(n()))
+head(eig_mean)
+
+# save it
+write.csv(eig_mean, file = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/MEs_mean_style_2cond.csv"),row.names = F)
+```
+
+Prepare the labels:
+
+```{r}
+custom_labels = sort(table(mergedColors),decreasing = T) %>% as.data.frame()
+custom_labels$label = paste0("\"","ME",custom_labels$mergedColors, "\"", " = ", "\"","ME",custom_labels$mergedColors, " (", custom_labels$Freq, ")","\"")
+custom_labels = custom_labels %>% filter(mergedColors != "grey")
+cat(custom_labels$label, sep = ",")
+```
+
+Copy above characters:
+```{r}
+# copy-paste the labels from previous chunk output
+custom_labels1=c("MEturquoise" = "MEturquoise (1626)","MEblue" = "MEblue (1409)","MEbrown" = "MEbrown (1078)","MEyellow" = "MEyellow (1055)","MEgreen" = "MEgreen (994)","MEred" = "MEred (961)","MEblack" = "MEblack (835)","MEpink" = "MEpink (652)","MEmagenta" = "MEmagenta (550)","MEpurple" = "MEpurple (495)","MEgreenyellow" = "MEgreenyellow (437)","MEtan" = "MEtan (431)","MEsalmon" = "MEsalmon (348)","MEcyan" = "MEcyan (331)","MEmidnightblue" = "MEmidnightblue (309)","MElightcyan" = "MElightcyan (299)","MEgrey60" = "MEgrey60 (257)","MElightgreen" = "MElightgreen (230)","MElightyellow" = "MElightyellow (224)","MEroyalblue" = "MEroyalblue (184)","MEdarkred" = "MEdarkred (175)","MEdarkgreen" = "MEdarkgreen (171)","MEdarkturquoise" = "MEdarkturquoise (145)","MEdarkgrey" = "MEdarkgrey (110)","MEorange" = "MEorange (105)","MEdarkorange" = "MEdarkorange (102)","MEskyblue" = "MEskyblue (102)","MEwhite" = "MEwhite (102)","MEsaddlebrown" = "MEsaddlebrown (99)","MEsteelblue" = "MEsteelblue (98)","MEpaleturquoise" = "MEpaleturquoise (95)","MEviolet" = "MEviolet (93)","MEdarkolivegreen" = "MEdarkolivegreen (59)","MEdarkmagenta" = "MEdarkmagenta (46)","MEsienna3" = "MEsienna3 (39)")
+```
+
+
+Now plot them.
+```{r, fig.width=18,fig.height=12}
+eig_mean$ZT <- factor(eig_mean$ZT,levels = levels(as.factor(eig_mean$ZT)))
+
+rank_moduleColors <- rownames(sort(table(mergedColors), decreasing = T)) # "moduleColors" dataframe is from section 3.3.1
+eig_mean$module <- factor(eig_mean$module,
+                                levels = c(paste0("ME",rank_moduleColors)))
+
+eig_lineplot <- eig_mean %>% 
+  filter(module != "MEgrey") %>% # remove module 0
+  ggplot(aes(x = ZT, y = mean.expr, group = condition)) +
+  # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill="#52d8da",alpha=0.4)+
+  # geom_rect(aes(xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf), fill="#fbaca7",alpha=0.4)+
+  annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="#52d8da",alpha=0.4)+
+  annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+  geom_ribbon(aes(x=ZT, ymin = mean.expr-se, ymax = mean.expr+se, group = condition, fill = condition),position = "identity", alpha = 0.5)+
+  geom_line(aes(color = condition)) +
+  geom_point(aes(color = condition)) +
+  facet_wrap(vars(module),scales = "free_x",ncol = 7,labeller = labeller(module = custom_labels1)) +
+  # scale_color_manual(values = rank_moduleColors_style[rank_moduleColors_style != "grey"]) +
+  labs(x="", y="Normalized eigengene expression", 
+       title = "Module eigengene expression - style 2cond") +
+  theme_bw() +
+  theme(#axis.text.x = element_text(angle = 30, hjust = 1, vjust = 1),
+        legend.position = "top")
+eig_lineplot
+```
+
+```{r}
+# save the plot
+ggsave(eig_lineplot, 
+       filename = here::here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/plots/Merge_MEs_avgExpr_style_2cond_yfixed_reanalysis.png"),
+       device = "png", width = 18,height = 12)
+```
+
+
+## 3.8 save the results
+```{r}
+save(
+   expr_sig,
+   sampleTree,
+   sft,
+   unmergedLabels,
+   unmergedColors,
+   mergedColors,
+   mergedLabels,
+   module_sum_beforeMerge,
+   module_sum_afterMerge,
+   MEs,
+   eig,
+   eig_mean,
+   eig_mean,
+   file = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results//WGCNA_style_2cond_reanalysis.RData"
+ ))
+```
+
+#============================
+# 5. plot the cluster genes
+
+```{r}
+## get module genes
+gene_module <- data.frame(ID=colnames(expr_sig), module=mergedColors)
+gene_module = gene_module[order(gene_module$module),]
+head(gene_module)
+```
+
+```{r}
+# z-score on log-transformed CPM
+expr_sig[1:3,1:3]
+expr_zscore = scale(expr_sig, center = TRUE, scale = TRUE)
+expr_zscore[1:3,1:3]
+```
+
+```{r}
+# set.seed(25) #make this repeatable as kmeans has random starting positions
+# fit8 <- kmeans(E_matrix, 8)
+
+expr_forclus = t(expr_zscore) %>% 
+  as.data.frame() %>% 
+  rownames_to_column(var = "geneID") 
+
+expr_forclus.L = expr_forclus %>% pivot_longer(cols = 2:ncol(expr_forclus),
+                                                           names_to = "sample",
+                                                           values_to = "zscored_logCPM")
+
+clus.a = left_join(expr_forclus.L, gene_module,
+                               by = c("geneID" = "ID"))
+
+clus.b = left_join(clus.a, metadata, 
+                                 by = c("sample" = "name"))
+head(clus.b)
+
+# clus8 <- cbind(clus8, E_matrix) %>% # add cluster labels to gene expression matrix
+  # mutate(gene_index=1:nrow(clus8)) # would be better to bring in gene names but OK for now.
+```
+
+```{r}
+clus_sum <- clus.b %>% 
+  group_by(geneID, module, condition,ZT) %>%
+  summarize(expression = mean(zscored_logCPM))
+
+clus_sum$ZT = factor(clus_sum$ZT,levels = levels(as.factor(clus_sum$ZT)))
+clus_sum$module = paste0("ME",clus_sum$module)
+rank_moduleColors <- rownames(sort(table(mergedColors), decreasing = T))
+clus_sum$module = factor(clus_sum$module,
+                                levels = c(paste0("ME",rank_moduleColors)))
+
+# merge eigengene expression to the table
+clus_sum1 = left_join(clus_sum, eig_mean,
+                             by = c("module" = "module", "ZT" = "ZT", "condition" = "condition"))
+
+clus_sum2 = clus_sum1 %>% filter(module != "MEgrey")   # not plot grey module genes
+head(clus_sum2)
+```
+```{r}
+custom_labels = sort(table(mergedColors),decreasing = T) %>% as.data.frame()
+custom_labels$label = paste0("\"","ME",custom_labels$mergedColors, "\"", " = ", "\"","ME",custom_labels$mergedColors, " (", custom_labels$Freq, ")","\"")
+custom_labels = custom_labels %>% filter(mergedColors != "grey")
+cat(custom_labels$label, sep = ",")
+```
+
+```{r}
+# copy-paste the labels from previous chunk output
+custom_labels1=c("MEturquoise" = "MEturquoise (1626)","MEblue" = "MEblue (1409)","MEbrown" = "MEbrown (1078)","MEyellow" = "MEyellow (1055)","MEgreen" = "MEgreen (994)","MEred" = "MEred (961)","MEblack" = "MEblack (835)","MEpink" = "MEpink (652)","MEmagenta" = "MEmagenta (550)","MEpurple" = "MEpurple (495)","MEgreenyellow" = "MEgreenyellow (437)","MEtan" = "MEtan (431)","MEsalmon" = "MEsalmon (348)","MEcyan" = "MEcyan (331)","MEmidnightblue" = "MEmidnightblue (309)","MElightcyan" = "MElightcyan (299)","MEgrey60" = "MEgrey60 (257)","MElightgreen" = "MElightgreen (230)","MElightyellow" = "MElightyellow (224)","MEroyalblue" = "MEroyalblue (184)","MEdarkred" = "MEdarkred (175)","MEdarkgreen" = "MEdarkgreen (171)","MEdarkturquoise" = "MEdarkturquoise (145)","MEdarkgrey" = "MEdarkgrey (110)","MEorange" = "MEorange (105)","MEdarkorange" = "MEdarkorange (102)","MEskyblue" = "MEskyblue (102)","MEwhite" = "MEwhite (102)","MEsaddlebrown" = "MEsaddlebrown (99)","MEsteelblue" = "MEsteelblue (98)","MEpaleturquoise" = "MEpaleturquoise (95)","MEviolet" = "MEviolet (93)","MEdarkolivegreen" = "MEdarkolivegreen (59)","MEdarkmagenta" = "MEdarkmagenta (46)","MEsienna3" = "MEsienna3 (39)")
+```
+
+
+```{r, fig.width=18, fig.height=12}
+clus_plot1 = clus_sum2 %>% 
+  ggplot() +
+  annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="#52d8da",alpha=0.4)+
+  annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+  geom_line(data = clus_sum2[clus_sum2$condition == "14",],
+            aes(x=ZT, y=expression, group = geneID), color = "#fbaca7",alpha=.2) +
+  geom_line(data = clus_sum2[clus_sum2$condition == "16",],
+            aes(x=ZT, y=expression, group = geneID),color = "#52d8da",alpha=.2)+
+  facet_wrap(~module, ncol=7,scales = "free_x", labeller = labeller(module = custom_labels1))+
+  labs(x = "ZT", y = "Normalized expression", title = "WGCNA of DEGs across time: style 2cond")+
+  # scale_color_manual(
+  #   values = c("14"="#fbaca7","16" = "#52d8da"),
+  #   labels = c("Dark ZT14-18.5", "Dark ZT16-20.5")
+  # ) +
+  guides(color = guide_legend(override.aes = list(size = 5)))+ # Adjust legend appearance
+  theme_bw()+
+  theme(# axis.text.x = element_text(angle = 0, size = 8),
+        legend.position = "top")
+clus_plot1
+
+png(here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/plots/style_2cond_normalized_gene_expression.png"), width = 18, height=12, units = "in",res = 300)
+print(clus_plot1)
+dev.off()
+
+clus_plot1
+```
+
+
+#======================================================
+# 6. GO analysis (all genes in each organ as backgroud)
+
+## 6.0 Load GO terms (these are from Chris)
+# 6. GO analysis (all genes in each organ as backgroud)
+
+## 6.0 Load GO terms (these are from Chris)
+```{r}
+GO_term_list <- read.csv(here("6_homolog_blast/Ha412gene_GOterms_LLW_20240701.csv"))
+head(GO_term_list) # GO numbers in V6; process in V5
+```
+
+```{r}
+# GO_term_list <- read.csv(here("stacey/Ha412_eugene_GOterms.csv"))
+# head(GO_term_list) # GO numbers in X6; process in X5
+```
+
+GO analysis was performed on merged modules.
+
+## 6.1 add colors to the genes
+
+```{r}
+dim(expr_sig) #21398 by 96
+modules <- t(expr_sig) %>% as.data.frame() %>% rownames_to_column("geneID")
+modules.after <- modules %>% dplyr::mutate(module = mergedColors)
+head(modules.after)
+
+write.csv(modules.after, here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/merged_style_2cond_moduleAssignment.csv"))
+```
+
+**this is one point that i re do the WGCNA-GO: change background genes**
+## 6.2 Generate the background gene ID ('universe')
+
+Which gene list should be the background gene?
+```
+I tried with the DEGs of cond16, namely 20920 genes for style.
+```
+
+```{r}
+# use the DEGs of cond16 as background genes
+genes_for_background <- cpmlog$X ## here i change the gene list of background
+length(genes_for_background)
+
+# genes_for_background <- timecourse_deg$geneID ## here i change the gene list of background
+# length(genes_for_background)
+```
+
+Create lists that have GO terms for each gene in background
+```{r}
+bg_gene <- subset(GO_term_list, Ha412 %in% genes_for_background)
+gene.GO.bg <- dplyr::select(bg_gene, c("V6", "Ha412"))
+
+head(gene.GO.bg)
+head(bg_gene)
+```
+create tables - used later in function to add term names to term numbers 
+
+GO.ID.process
+```{r}
+GO.ID.process <- dplyr::select(bg_gene, c("V6", "V5"))
+colnames(GO.ID.process) <- c("ID", "desc")
+head(GO.ID.process)
+```
+
+## 6.3 write style function
+
+From Stacey's notes:
+*for this function you add in any gene list and it will give you the go terms - numbers and actual description along with the pvalues - the pval cutoff here I have set to one so it will pull out everything that has at least 1 in it. You can filter the output table to only include the significant ones*
+
+```{r}
+clust_go_function <- function(genelist){
+  temp1 <- enricher(genelist, universe = genes_for_background, TERM2GENE = gene.GO.bg, pvalueCutoff = 1)
+  temp2 <- head(temp1, n = Inf)
+  temp3 <- unique(merge(temp2, GO.ID.process, by = "ID"))
+  return(temp3)
+}
+```
+
+## 6.4 GO enrichment for each module
+```{r}
+mod = levels(as.factor(modules.after$module))
+GO.sig.DEG = list() # i add a .DEG here to remind myself that the background genes are the DEGs of cond16 from time-course DEG analysis.
+GO.enrich.DEG = list()
+
+for (i in mod){
+  mod.gene <- modules.after %>% filter(module == i) %>% pull(geneID)  # 383 genes
+  # length(style.pink.merge)
+  enrich <- clust_go_function(mod.gene) # all enriched iterms
+  if (nrow(enrich) > 0){
+  enrich$module = c(paste(i))
+  } else {
+    next
+  } 
+  GO.enrich.DEG[[i]] = enrich
+  
+  GO.sig <- filter(enrich, qvalue < 0.05) # filter only significant iterms
+  if (nrow(GO.sig) > 0){
+  GO.sig$module = c(paste(i))
+  } else {
+    next
+  }
+  GO.sig.DEG[[i]] = GO.sig
+  # names(GO.sig.style.afterMerge[[i]]) = i
+}
+
+writexl::write_xlsx(x = GO.enrich.DEG, path = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/GO.allEnrichIterm.style.2cond.ALLbg.re.xlsx"))
+
+writexl::write_xlsx(x = GO.sig.DEG, path = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/GO.sig.style.2cond.ALLbg.re.xlsx"))
+```
+
+```{r}
+go.allEnrich = do.call(rbind, GO.enrich.DEG) %>% 
+  as.data.frame() %>% 
+  mutate(organ = paste("style"), condition = paste("14&16"), merge = paste("after")) 
+writexl::write_xlsx(x = go.allEnrich, path = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/GO.allEnrichIterm.style.2cond.allModules.ALLbg.re.xlsx"))
+
+go.sig = do.call(rbind, GO.sig.DEG) %>% 
+  as.data.frame() %>% 
+  mutate(organ = paste("style"), condition = paste("14&16"), merge = paste("after")) 
+writexl::write_xlsx(x = go.sig, path = here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/GO.sig.style.2cond.allModules.ALLbg.re.xlsx"))
+```
+
+
+## 6.5 Looking at over-representation of GO Terms
+```{r}
+# this function parse character ratio to double value, such as 1/5 to 0.2
+parse_ratio <- function(ratio) {
+    ratio <- sub("^\\s*", "", as.character(ratio))
+    ratio <- sub("\\s*$", "", ratio)
+    numerator <- as.numeric(sub("/\\d+$", "", ratio))
+    denominator <- as.numeric(sub("^\\d+/", "", ratio))
+    return(numerator/denominator)
+}
+```
+
+```{r}
+GO.sig.genes = readxl::read_excel(here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/GO.sig.style.2cond.allModules.ALLbg.re.xlsx"))
+head(GO.sig.genes)
+```
+
+```{r}
+# add a column with calculated enrichment fold
+GO.sig.EnrichmentFold = GO.sig.genes %>% 
+  mutate(FoldEnrichment = parse_ratio(GeneRatio)/parse_ratio(BgRatio))
+head(GO.sig.EnrichmentFold)
+
+writexl::write_xlsx(GO.sig.EnrichmentFold, here("4_WGCNA/blockwise_DEG_reanalysis/style_2cond_trial2/results/GO.sig.style.2cond.allModules.FoldEnrichment.ALLbg.re.xlsx") )
+```
+
+
+# 7. grey module individuals (NOT RUN)
+
+```{r}
+# filter genes in grey module
+greyModule = gene_module %>% filter(module == "grey")
+dim(greyModule) # 5266
+
+# extract columns in grey module
+greyGene = intersect(greyModule$ID, colnames(expr_sig))
+
+expr_sig_a = expr_sig %>% as.data.frame()
+greyModuleGene = expr_sig_a %>% 
+  dplyr::select(all_of(greyGene)) %>% 
+  rownames_to_column(var = "name")
+dim(greyModuleGene) 
+```
+
+```{r}
+# add sample info to the expression data
+greyModuleGene_L = greyModuleGene %>% 
+  pivot_longer(cols=2:ncol(greyModuleGene),names_to = "geneID",values_to = "value")
+  
+greyModuleGene_L1 = left_join(greyModuleGene_L, metadata, by = "name")
+head(greyModuleGene_L1)
+```
+
+
+```{r}
+greyModuleGene_sum = greyModuleGene_L1 %>% 
+  group_by(geneID, condition, ZT) %>% 
+  summarise(avg.cpmLog = mean(value), se = sd(value)/sqrt(n()))
+head(greyModuleGene_sum)
+```
+
+```{r}
+
+greyModuleGene_sum$ZT <- factor(greyModuleGene_sum$ZT,
+                                    levels = levels(as.factor(greyModuleGene_sum$ZT)))
+
+
+p_grey = list()
+for (i in unique(greyModuleGene_sum$geneID)){
+  p = greyModuleGene_sum %>% filter(geneID == i) %>% 
+    group_by(ZT, condition) %>%
+    ggplot(aes(x=ZT, y = avg.cpmLog, color = condition, group = condition))+
+    # geom_rect(aes(xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf), fill = "grey",alpha=0.4)+
+    annotate("rect",xmin=4,xmax=6.25,ymin=-Inf,ymax=Inf, fill="#52d8da",alpha=0.4)+
+    annotate("rect",xmin=3,xmax=5.25,ymin=-Inf,ymax=Inf, fill="#fbaca7",alpha=0.4)+
+    geom_ribbon(aes(x=ZT, ymin = avg.cpmLog-se, ymax = avg.cpmLog+se,group = condition,fill = condition), 
+                position = "identity",alpha = 0.5)+
+    geom_point() + geom_line() +
+    # scale_y_continuous(limits = c(-0.4,0.4))+
+    labs(title = i)+
+    theme_bw()
+  p_grey[[i]]=p
+}
+```
+
+```{r}
+pdf(file = here::here("4_WGCNA/blockwise_DEG_reanalysis/anther_2cond/plots/anther_greyModuleGene.pdf"), onefile = TRUE, width = 14,height = 9)
+
+gridExtra::marrangeGrob(p_grey, ncol = 3, nrow = 3, layout_matrix = matrix(seq_len(length(unique(greyModuleGene_sum$geneID))), nrow = 3, ncol = 3, byrow = TRUE), newpage = TRUE)
+```
+
+
+
