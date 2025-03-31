@@ -1,0 +1,33 @@
+"query","GO.ID","Term","Annotated","Significant","Expected","p_value","source","logPval"
+"Ha412HOChr03g0104371","GO:0010336","gibberellic acid homeostasis",2,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr03g0104371","GO:0048579","negative regulation of long-day photoper...",6,1,0,0.0034,"BP",2.46852108295775
+"Ha412HOChr03g0104371","GO:0009690","cytokinin metabolic process",14,1,0.01,0.0078,"BP",2.10790539730952
+"Ha412HOChr03g0104371","GO:0035335","peptidyl-tyrosine dephosphorylation",36,1,0.02,0.02,"BP",1.69897000433602
+"Ha412HOChr03g0104371","GO:0018108","peptidyl-tyrosine phosphorylation",64,1,0.04,0.0354,"BP",1.45099673797421
+"Ha412HOChr06g0271081","GO:0045836","positive regulation of meiotic nuclear d...",2,1,0,0.0018,"BP",2.74472749489669
+"Ha412HOChr06g0271081","GO:0080143","regulation of amino acid export",6,1,0.01,0.0055,"BP",2.25963731050576
+"Ha412HOChr06g0271081","GO:0015969","guanosine tetraphosphate metabolic proce...",7,1,0.01,0.0064,"BP",2.19382002601611
+"Ha412HOChr06g0271081","GO:0051560","mitochondrial calcium ion homeostasis",7,1,0.01,0.0064,"BP",2.19382002601611
+"Ha412HOChr06g0271081","GO:0000422","autophagy of mitochondrion",14,1,0.01,0.0127,"BP",1.89619627904404
+"Ha412HOChr06g0271081","GO:0000045","autophagosome assembly",23,1,0.02,0.0208,"BP",1.68193666503724
+"Ha412HOChr06g0271081","GO:0006635","fatty acid beta-oxidation",30,1,0.03,0.027,"BP",1.56863623584101
+"Ha412HOChr06g0271081","GO:0010150","leaf senescence",39,1,0.04,0.035,"BP",1.45593195564972
+"Ha412HOChr06g0271081","GO:0006857","oligopeptide transport",42,1,0.04,0.0377,"BP",1.42365864979421
+"Ha412HOChr06g0277881","GO:0051300","spindle pole body organization",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr06g0277881","GO:0019722","calcium-mediated signaling",8,1,0,0.0028,"BP",2.55284196865778
+"Ha412HOChr06g0277881","GO:0019288","isopentenyl diphosphate biosynthetic pro...",13,1,0,0.0046,"BP",2.33724216831843
+"Ha412HOChr06g0277881","GO:0016114","terpenoid biosynthetic process",64,1,0.02,0.0223,"BP",1.65169513695184
+"Ha412HOChr06g0277881","GO:0006633","fatty acid biosynthetic process",132,1,0.05,0.0455,"BP",1.34198860334289
+"Ha412HOChr11g0486251","GO:0006122","mitochondrial electron transport, ubiqui...",13,1,0,0.0036,"BP",2.44369749923271
+"Ha412HOChr11g0486251","GO:0009306","protein secretion",19,1,0.01,0.0053,"BP",2.27572413039921
+"Ha412HOChr11g0486251","GO:0000209","protein polyubiquitination",38,1,0.01,0.0106,"BP",1.97469413473523
+"Ha412HOChr11g0486251","GO:0006869","lipid transport",105,1,0.03,0.0292,"BP",1.53461714855158
+"Ha412HOChr11g0486251","GO:0006633","fatty acid biosynthetic process",132,1,0.04,0.0365,"BP",1.43770713554353
+"Ha412HOChr11g0486251","GO:0043161","proteasome-mediated ubiquitin-dependent ...",163,1,0.05,0.045,"BP",1.34678748622466
+"Ha412HOChr11g0489761","GO:0031952","regulation of protein autophosphorylatio...",11,1,0,0.0023,"BP",2.63827216398241
+"Ha412HOChr11g0489761","GO:0009396","folic acid-containing compound biosynthe...",16,1,0,0.0034,"BP",2.46852108295775
+"Ha412HOChr11g0489761","GO:0035999","tetrahydrofolate interconversion",17,1,0,0.0036,"BP",2.44369749923271
+"Ha412HOChr11g0489761","GO:0043666","regulation of phosphoprotein phosphatase...",61,1,0.01,0.0128,"BP",1.89279003035213
+"hubs","GO:0051300","spindle pole body organization",3,1,0,0.00063,"BP",3.20065945054642
+"hubs","GO:0019722","calcium-mediated signaling",8,1,0,0.00168,"BP",2.77469071827414
+"hubs","GO:0009690","cytokinin metabolic process",14,1,0,0.00295,"BP",2.53017798402184

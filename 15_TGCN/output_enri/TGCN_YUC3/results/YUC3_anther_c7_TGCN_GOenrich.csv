@@ -1,0 +1,12 @@
+"query","GO.ID","Term","Annotated","Significant","Expected","p_value","source","logPval"
+"Ha412HOChr06g0277881","GO:0051300","spindle pole body organization",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr06g0277881","GO:0019722","calcium-mediated signaling",8,1,0,0.0028,"BP",2.55284196865778
+"Ha412HOChr06g0277881","GO:0019288","isopentenyl diphosphate biosynthetic pro...",13,1,0,0.0046,"BP",2.33724216831843
+"Ha412HOChr06g0277881","GO:0016114","terpenoid biosynthetic process",64,1,0.02,0.0223,"BP",1.65169513695184
+"Ha412HOChr06g0277881","GO:0006633","fatty acid biosynthetic process",132,1,0.05,0.0455,"BP",1.34198860334289
+"Ha412HOChr11g0489761","GO:0031952","regulation of protein autophosphorylatio...",11,1,0,0.0023,"BP",2.63827216398241
+"Ha412HOChr11g0489761","GO:0009396","folic acid-containing compound biosynthe...",16,1,0,0.0034,"BP",2.46852108295775
+"Ha412HOChr11g0489761","GO:0035999","tetrahydrofolate interconversion",17,1,0,0.0036,"BP",2.44369749923271
+"Ha412HOChr11g0489761","GO:0043666","regulation of phosphoprotein phosphatase...",61,1,0.01,0.0128,"BP",1.89279003035213
+"hubs","GO:0051300","spindle pole body organization",3,1,0,0.00042,"BP",3.3767507096021
+"hubs","GO:0019722","calcium-mediated signaling",8,1,0,0.00112,"BP",2.95078197732982

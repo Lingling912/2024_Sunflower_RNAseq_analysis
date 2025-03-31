@@ -1,0 +1,199 @@
+"query","GO.ID","Term","Annotated","Significant","Expected","p_value","source","logPval"
+"Ha412HOChr03g0104371","GO:0010336","gibberellic acid homeostasis",2,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr03g0104371","GO:0048579","negative regulation of long-day photoper...",6,1,0,0.0034,"BP",2.46852108295775
+"Ha412HOChr03g0104371","GO:0009690","cytokinin metabolic process",14,1,0.01,0.0078,"BP",2.10790539730952
+"Ha412HOChr03g0104371","GO:0035335","peptidyl-tyrosine dephosphorylation",36,1,0.02,0.02,"BP",1.69897000433602
+"Ha412HOChr03g0104371","GO:0018108","peptidyl-tyrosine phosphorylation",64,1,0.04,0.0354,"BP",1.45099673797421
+"Ha412HOChr03g0131441","GO:0051776","detection of redox state",1,1,0,7e-04,"BP",3.15490195998574
+"Ha412HOChr03g0131441","GO:0080005","photosystem stoichiometry adjustment",2,1,0,0.0014,"BP",2.85387196432176
+"Ha412HOChr03g0131441","GO:0070179","D-serine biosynthetic process",2,1,0,0.0014,"BP",2.85387196432176
+"Ha412HOChr03g0131441","GO:0042866","pyruvate biosynthetic process",2,1,0,0.0014,"BP",2.85387196432176
+"Ha412HOChr03g0131441","GO:0051300","spindle pole body organization",3,1,0,0.0021,"BP",2.67778070526608
+"Ha412HOChr03g0131441","GO:0019323","pentose catabolic process",5,1,0,0.0035,"BP",2.45593195564972
+"Ha412HOChr03g0131441","GO:0018106","peptidyl-histidine phosphorylation",6,1,0,0.0042,"BP",2.3767507096021
+"Ha412HOChr03g0131441","GO:0019722","calcium-mediated signaling",8,1,0.01,0.0056,"BP",2.2518119729938
+"Ha412HOChr03g0131441","GO:0009624","response to nematode",10,1,0.01,0.007,"BP",2.15490195998574
+"Ha412HOChr03g0131441","GO:0009052","pentose-phosphate shunt, non-oxidative b...",13,1,0.01,0.0091,"BP",2.04095860767891
+"Ha412HOChr03g0131441","GO:0006515","protein quality control for misfolded or...",17,1,0.01,0.0119,"BP",1.92445303860747
+"Ha412HOChr03g0131441","GO:0006563","L-serine metabolic process",33,1,0.02,0.0229,"BP",1.64016451766011
+"Ha412HOChr03g0131441","GO:0000302","response to reactive oxygen species",58,1,0.04,0.04,"BP",1.39794000867204
+"Ha412HOChr03g0131441","GO:0005975","carbohydrate metabolic process",1016,4,0.71,0.0458,"BP",1.33913452199613
+"Ha412HOChr03g0131441","GO:0006004","fucose metabolic process",67,1,0.05,0.0461,"BP",1.33629907461035
+"Ha412HOChr04g0145741","GO:0001678","intracellular glucose homeostasis",14,1,0.01,0.0059,"BP",2.22914798835786
+"Ha412HOChr04g0145741","GO:0000290","deadenylation-dependent decapping of nuc...",14,1,0.01,0.0059,"BP",2.22914798835786
+"Ha412HOChr04g0145741","GO:0046835","carbohydrate phosphorylation",37,1,0.02,0.0155,"BP",1.80966830182971
+"Ha412HOChr04g0145741","GO:0006096","glycolytic process",95,1,0.04,0.0394,"BP",1.40450377817443
+"Ha412HOChr05g0240361","GO:0080153","negative regulation of reductive pentose...",2,1,0,0.00056,"BP",3.2518119729938
+"Ha412HOChr05g0240361","GO:0006306","DNA methylation",26,1,0.01,0.00728,"BP",2.13786862068696
+"Ha412HOChr05g0240361","GO:0030422","siRNA processing",26,1,0.01,0.00728,"BP",2.13786862068696
+"Ha412HOChr05g0240361","GO:0006997","nucleus organization",37,1,0.01,0.01035,"BP",1.98505965020706
+"Ha412HOChr05g0240361","GO:0006458","'de novo' protein folding",41,1,0.01,0.01146,"BP",1.94081538236863
+"Ha412HOChr05g0240361","GO:0042026","protein refolding",42,1,0.01,0.01174,"BP",1.9303319030884
+"Ha412HOChr05g0240361","GO:0050832","defense response to fungus",74,1,0.02,0.02062,"BP",1.6857113390525
+"Ha412HOChr05g0240361","GO:0007005","mitochondrion organization",143,1,0.04,0.03955,"BP",1.4028535121663
+"Ha412HOChr06g0254491","GO:0046951","ketone body biosynthetic process",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr06g0254491","GO:0006552","leucine catabolic process",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr06g0254491","GO:0006487","protein N-linked glycosylation",38,1,0.01,0.0133,"BP",1.87614835903291
+"Ha412HOChr06g0254491","GO:0043666","regulation of phosphoprotein phosphatase...",61,1,0.02,0.0212,"BP",1.67366413907125
+"Ha412HOChr06g0254491","GO:0006401","RNA catabolic process",98,1,0.03,0.0339,"BP",1.46980030179692
+"Ha412HOChr06g0254491","GO:0090305","nucleic acid phosphodiester bond hydroly...",110,1,0.04,0.038,"BP",1.42021640338319
+"Ha412HOChr06g0254491","GO:0031047","regulatory ncRNA-mediated gene silencing",116,1,0.04,0.0401,"BP",1.39685562737982
+"Ha412HOChr06g0271081","GO:0045836","positive regulation of meiotic nuclear d...",2,1,0,0.0018,"BP",2.74472749489669
+"Ha412HOChr06g0271081","GO:0080143","regulation of amino acid export",6,1,0.01,0.0055,"BP",2.25963731050576
+"Ha412HOChr06g0271081","GO:0015969","guanosine tetraphosphate metabolic proce...",7,1,0.01,0.0064,"BP",2.19382002601611
+"Ha412HOChr06g0271081","GO:0051560","mitochondrial calcium ion homeostasis",7,1,0.01,0.0064,"BP",2.19382002601611
+"Ha412HOChr06g0271081","GO:0000422","autophagy of mitochondrion",14,1,0.01,0.0127,"BP",1.89619627904404
+"Ha412HOChr06g0271081","GO:0000045","autophagosome assembly",23,1,0.02,0.0208,"BP",1.68193666503724
+"Ha412HOChr06g0271081","GO:0006635","fatty acid beta-oxidation",30,1,0.03,0.027,"BP",1.56863623584101
+"Ha412HOChr06g0271081","GO:0010150","leaf senescence",39,1,0.04,0.035,"BP",1.45593195564972
+"Ha412HOChr06g0271081","GO:0006857","oligopeptide transport",42,1,0.04,0.0377,"BP",1.42365864979421
+"Ha412HOChr06g0277881","GO:0051300","spindle pole body organization",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr06g0277881","GO:0019722","calcium-mediated signaling",8,1,0,0.0028,"BP",2.55284196865778
+"Ha412HOChr06g0277881","GO:0019288","isopentenyl diphosphate biosynthetic pro...",13,1,0,0.0046,"BP",2.33724216831843
+"Ha412HOChr06g0277881","GO:0016114","terpenoid biosynthetic process",64,1,0.02,0.0223,"BP",1.65169513695184
+"Ha412HOChr06g0277881","GO:0006633","fatty acid biosynthetic process",132,1,0.05,0.0455,"BP",1.34198860334289
+"Ha412HOChr09g0410201","GO:0010223","secondary shoot formation",6,1,0,0.0025,"BP",2.60205999132796
+"Ha412HOChr09g0410201","GO:0043967","histone H4 acetylation",13,1,0.01,0.0055,"BP",2.25963731050576
+"Ha412HOChr09g0410201","GO:0043966","histone H3 acetylation",20,1,0.01,0.0084,"BP",2.07572071393812
+"Ha412HOChr09g0410201","GO:0006355","regulation of DNA-templated transcriptio...",1320,3,0.56,0.0128,"BP",1.89279003035213
+"Ha412HOChr09g0410201","GO:0048573","photoperiodism, flowering",44,1,0.02,0.0184,"BP",1.73518217699046
+"Ha412HOChr09g0410201","GO:0071805","potassium ion transmembrane transport",69,1,0.03,0.0287,"BP",1.54211810326601
+"Ha412HOChr09g0410201","GO:0006888","endoplasmic reticulum to Golgi vesicle-m...",101,1,0.04,0.0418,"BP",1.37882371822496
+"Ha412HOChr09g0427971","GO:0010411","xyloglucan metabolic process",44,2,0.06,0.0019,"BP",2.72124639904717
+"Ha412HOChr09g0427971","GO:0050832","defense response to fungus",74,3,0.11,0.0039,"BP",2.4089353929735
+"Ha412HOChr09g0427971","GO:0002221","pattern recognition receptor signaling p...",3,1,0,0.0044,"BP",2.35654732351381
+"Ha412HOChr09g0427971","GO:1901002","positive regulation of response to salt ...",6,1,0.01,0.0088,"BP",2.05551732784983
+"Ha412HOChr09g0427971","GO:1900150","regulation of defense response to fungus",7,1,0.01,0.0103,"BP",1.98716277529483
+"Ha412HOChr09g0427971","GO:0046777","protein autophosphorylation",114,2,0.17,0.0121,"BP",1.91721462968355
+"Ha412HOChr09g0427971","GO:1900424","regulation of defense response to bacter...",10,1,0.01,0.0146,"BP",1.83564714421556
+"Ha412HOChr09g0427971","GO:0042546","cell wall biogenesis",131,2,0.19,0.0157,"BP",1.80410034759077
+"Ha412HOChr09g0427971","GO:0010506","regulation of autophagy",12,1,0.02,0.0176,"BP",1.75448733218585
+"Ha412HOChr09g0427971","GO:0042538","hyperosmotic salinity response",15,1,0.02,0.0219,"BP",1.65955588515988
+"Ha412HOChr09g0427971","GO:0000045","autophagosome assembly",23,1,0.03,0.0334,"BP",1.47625353318844
+"Ha412HOChr09g0427971","GO:0010951","negative regulation of endopeptidase act...",25,1,0.04,0.0362,"BP",1.44129142946683
+"Ha412HOChr09g0427971","GO:0046470","phosphatidylcholine metabolic process",26,1,0.04,0.0377,"BP",1.42365864979421
+"Ha412HOChr11g0486251","GO:0006122","mitochondrial electron transport, ubiqui...",13,1,0,0.0036,"BP",2.44369749923271
+"Ha412HOChr11g0486251","GO:0009306","protein secretion",19,1,0.01,0.0053,"BP",2.27572413039921
+"Ha412HOChr11g0486251","GO:0000209","protein polyubiquitination",38,1,0.01,0.0106,"BP",1.97469413473523
+"Ha412HOChr11g0486251","GO:0006869","lipid transport",105,1,0.03,0.0292,"BP",1.53461714855158
+"Ha412HOChr11g0486251","GO:0006633","fatty acid biosynthetic process",132,1,0.04,0.0365,"BP",1.43770713554353
+"Ha412HOChr11g0486251","GO:0043161","proteasome-mediated ubiquitin-dependent ...",163,1,0.05,0.045,"BP",1.34678748622466
+"Ha412HOChr11g0489761","GO:0031952","regulation of protein autophosphorylatio...",11,1,0,0.0023,"BP",2.63827216398241
+"Ha412HOChr11g0489761","GO:0009396","folic acid-containing compound biosynthe...",16,1,0,0.0034,"BP",2.46852108295775
+"Ha412HOChr11g0489761","GO:0035999","tetrahydrofolate interconversion",17,1,0,0.0036,"BP",2.44369749923271
+"Ha412HOChr11g0489761","GO:0043666","regulation of phosphoprotein phosphatase...",61,1,0.01,0.0128,"BP",1.89279003035213
+"Ha412HOChr11g0530871","GO:0008285","negative regulation of cell population p...",5,1,0,0.0042,"BP",2.3767507096021
+"Ha412HOChr11g0530871","GO:0048579","negative regulation of long-day photoper...",6,1,0.01,0.005,"BP",2.30102999566398
+"Ha412HOChr11g0530871","GO:0007275","multicellular organism development",784,3,0.66,0.0057,"BP",2.24412514432751
+"Ha412HOChr11g0530871","GO:0051726","regulation of cell cycle",167,2,0.14,0.0083,"BP",2.08092190762393
+"Ha412HOChr11g0530871","GO:2000104","negative regulation of DNA-templated DNA...",10,1,0.01,0.0084,"BP",2.07572071393812
+"Ha412HOChr11g0530871","GO:0006468","protein phosphorylation",1436,5,1.21,0.0165,"BP",1.78251605578609
+"Ha412HOChr11g0530871","GO:0006511","ubiquitin-dependent protein catabolic pr...",324,2,0.27,0.0293,"BP",1.53313237964589
+"Ha412HOChr11g0530871","GO:0035335","peptidyl-tyrosine dephosphorylation",36,1,0.03,0.0299,"BP",1.52432881167557
+"Ha412HOChr11g0530871","GO:0016567","protein ubiquitination",421,2,0.35,0.0473,"BP",1.32513885926219
+"Ha412HOChr12g0548291","GO:0035352","NAD transmembrane transport",1,1,0,0.00063,"BP",3.20065945054642
+"Ha412HOChr12g0548291","GO:0051298","centrosome duplication",2,1,0,0.00126,"BP",2.89962945488244
+"Ha412HOChr12g0548291","GO:0030951","establishment or maintenance of microtub...",2,1,0,0.00126,"BP",2.89962945488244
+"Ha412HOChr12g0548291","GO:0017157","regulation of exocytosis",8,1,0.01,0.00504,"BP",2.29756946355447
+"Ha412HOChr12g0548291","GO:0015709","thiosulfate transport",9,1,0.01,0.00567,"BP",2.24641694110709
+"Ha412HOChr12g0548291","GO:0046785","microtubule polymerization",16,1,0.01,0.01006,"BP",1.99740201928009
+"Ha412HOChr12g0548291","GO:0009306","protein secretion",19,1,0.01,0.01194,"BP",1.92299567320665
+"Ha412HOChr12g0548291","GO:1902358","sulfate transmembrane transport",26,1,0.02,0.01631,"BP",1.78754603895972
+"Ha412HOChr12g0548291","GO:0006904","vesicle docking involved in exocytosis",32,1,0.02,0.02004,"BP",1.69810228280479
+"Ha412HOChr12g0548291","GO:0000209","protein polyubiquitination",38,1,0.02,0.02376,"BP",1.62415356369084
+"Ha412HOChr12g0548291","GO:0007051","spindle organization",46,1,0.03,0.02869,"BP",1.542269451754
+"Ha412HOChr12g0548291","GO:0032482","Rab protein signal transduction",54,1,0.03,0.03361,"BP",1.47353148753052
+"Ha412HOChr12g0548291","GO:0006886","intracellular protein transport",499,2,0.32,0.03743,"BP",1.42678017288558
+"Ha412HOChr14g0659771","GO:0006552","leucine catabolic process",3,1,0,0.00063,"BP",3.20065945054642
+"Ha412HOChr14g0659771","GO:0046951","ketone body biosynthetic process",3,1,0,0.00063,"BP",3.20065945054642
+"Ha412HOChr14g0659771","GO:0042545","cell wall modification",53,1,0.01,0.01112,"BP",1.95389521275396
+"Ha412HOChr14g0659771","GO:0045490","pectin catabolic process",74,1,0.02,0.0155,"BP",1.80966830182971
+"Ha412HOChr14g0659771","GO:0043086","negative regulation of catalytic activit...",130,1,0.03,0.02713,"BP",1.5665502062384
+"Ha412HOChr14g0659771","GO:0010629","negative regulation of gene expression",221,1,0.05,0.04582,"BP",1.33894491514662
+"Ha412HOChr15g0703871","GO:0048657","anther wall tapetum cell differentiation",2,1,0,0.00084,"BP",3.07572071393812
+"Ha412HOChr15g0703871","GO:0009831","plant-type cell wall modification involv...",4,1,0,0.00168,"BP",2.77469071827414
+"Ha412HOChr15g0703871","GO:0009729","detection of brassinosteroid stimulus",5,1,0,0.0021,"BP",2.67778070526608
+"Ha412HOChr15g0703871","GO:0009911","positive regulation of flower developmen...",9,1,0,0.00378,"BP",2.42250820016277
+"Ha412HOChr15g0703871","GO:0010584","pollen exine formation",12,1,0.01,0.00504,"BP",2.29756946355447
+"Ha412HOChr15g0703871","GO:0010268","brassinosteroid homeostasis",13,1,0.01,0.00546,"BP",2.26280735729526
+"Ha412HOChr15g0703871","GO:0010224","response to UV-B",16,1,0.01,0.00672,"BP",2.17263072694617
+"Ha412HOChr15g0703871","GO:1900140","regulation of seedling development",16,1,0.01,0.00672,"BP",2.17263072694617
+"Ha412HOChr15g0703871","GO:0034219","carbohydrate transmembrane transport",36,1,0.02,0.01507,"BP",1.82188674768537
+"Ha412HOChr15g0703871","GO:0010411","xyloglucan metabolic process",44,1,0.02,0.01839,"BP",1.73541827076192
+"Ha412HOChr15g0703871","GO:0009742","brassinosteroid mediated signaling pathw...",44,1,0.02,0.01839,"BP",1.73541827076192
+"Ha412HOChr15g0703871","GO:0042274","ribosomal small subunit biogenesis",55,1,0.02,0.02294,"BP",1.63940658643475
+"Ha412HOChr15g0703871","GO:0006873","intracellular monoatomic ion homeostasis",76,1,0.03,0.03159,"BP",1.50045037409485
+"Ha412HOChr15g0703871","GO:0015698","inorganic anion transport",102,1,0.04,0.0422,"BP",1.37468754903833
+"Ha412HOChr15g0708001","GO:0046294","formaldehyde catabolic process",3,1,0,0.00084,"BP",3.07572071393812
+"Ha412HOChr15g0708001","GO:0046686","response to cadmium ion",95,1,0.03,0.02641,"BP",1.57823159879308
+"Ha412HOChr15g0708001","GO:0006633","fatty acid biosynthetic process",132,1,0.04,0.03655,"BP",1.43711261870612
+"Ha412HOChr15g0713781","GO:0046294","formaldehyde catabolic process",3,1,0,0.0013,"BP",2.88605664769316
+"Ha412HOChr15g0713781","GO:0010223","secondary shoot formation",6,1,0,0.0025,"BP",2.60205999132796
+"Ha412HOChr15g0713781","GO:0043967","histone H4 acetylation",13,1,0.01,0.0055,"BP",2.25963731050576
+"Ha412HOChr15g0713781","GO:0016075","rRNA catabolic process",15,1,0.01,0.0063,"BP",2.20065945054642
+"Ha412HOChr15g0713781","GO:0000162","tryptophan biosynthetic process",17,1,0.01,0.0071,"BP",2.14874165128092
+"Ha412HOChr15g0713781","GO:0043966","histone H3 acetylation",20,1,0.01,0.0084,"BP",2.07572071393812
+"Ha412HOChr15g0713781","GO:0030422","siRNA processing",26,1,0.01,0.0109,"BP",1.96257350205938
+"Ha412HOChr15g0713781","GO:0051013","microtubule severing",29,1,0.01,0.0122,"BP",1.91364016932525
+"Ha412HOChr15g0713781","GO:0048573","photoperiodism, flowering",44,1,0.02,0.0184,"BP",1.73518217699046
+"Ha412HOChr15g0713781","GO:0046686","response to cadmium ion",95,1,0.04,0.0394,"BP",1.40450377817443
+"Ha412HOChr15g0728141","GO:1901002","positive regulation of response to salt ...",6,1,0,0.0025,"BP",2.60205999132796
+"Ha412HOChr15g0728141","GO:0006541","glutamine metabolic process",42,1,0.02,0.0176,"BP",1.75448733218585
+"Ha412HOChr15g0728141","GO:0010411","xyloglucan metabolic process",44,1,0.02,0.0184,"BP",1.73518217699046
+"Ha412HOChr15g0728141","GO:0050832","defense response to fungus",74,1,0.03,0.0308,"BP",1.51144928349956
+"Ha412HOChr15g0728141","GO:0018105","peptidyl-serine phosphorylation",76,1,0.03,0.0316,"BP",1.5003129173816
+"Ha412HOChr15g0728141","GO:0006887","exocytosis",94,1,0.04,0.0389,"BP",1.41005039867429
+"Ha412HOChr15g0728141","GO:0009738","abscisic acid-activated signaling pathwa...",102,1,0.04,0.0422,"BP",1.37468754903833
+"Ha412HOChr15g0728141","GO:0006351","DNA-templated transcription",1463,3,0.62,0.0435,"BP",1.36151074304536
+"Ha412HOChr15g0728141","GO:0046777","protein autophosphorylation",114,1,0.05,0.0471,"BP",1.3269790928711
+"Ha412HOChr15g0737211","GO:0001680","tRNA 3'-terminal CCA addition",2,1,0,0.00056,"BP",3.2518119729938
+"Ha412HOChr15g0737211","GO:0006606","protein import into nucleus",46,1,0.01,0.01285,"BP",1.89109687233269
+"Ha412HOChr15g0737211","GO:0006004","fucose metabolic process",67,1,0.02,0.01868,"BP",1.72862312810593
+"Ha412HOChr15g0744971","GO:0051300","spindle pole body organization",3,1,0,0.00063,"BP",3.20065945054642
+"Ha412HOChr15g0744971","GO:0019722","calcium-mediated signaling",8,1,0,0.00168,"BP",2.77469071827414
+"Ha412HOChr15g0744971","GO:0071805","potassium ion transmembrane transport",69,1,0.01,0.01446,"BP",1.83983170704149
+"Ha412HOChr16g0780931","GO:0009972","cytidine deamination",2,1,0,7e-04,"BP",3.15490195998574
+"Ha412HOChr16g0780931","GO:0006538","glutamate catabolic process",7,1,0,0.0025,"BP",2.60205999132796
+"Ha412HOChr16g0780931","GO:0042538","hyperosmotic salinity response",15,1,0.01,0.0053,"BP",2.27572413039921
+"Ha412HOChr16g0780931","GO:0006887","exocytosis",94,1,0.03,0.0326,"BP",1.48678239993206
+"Ha412HOChr16g0780931","GO:0046686","response to cadmium ion",95,1,0.03,0.0329,"BP",1.48280410205003
+"Ha412HOChr16g0783391","GO:0046294","formaldehyde catabolic process",3,1,0,0.00084,"BP",3.07572071393812
+"Ha412HOChr16g0783391","GO:0051300","spindle pole body organization",3,1,0,0.00084,"BP",3.07572071393812
+"Ha412HOChr16g0783391","GO:0010223","secondary shoot formation",6,1,0,0.00168,"BP",2.77469071827414
+"Ha412HOChr16g0783391","GO:0019722","calcium-mediated signaling",8,1,0,0.00224,"BP",2.64975198166584
+"Ha412HOChr16g0783391","GO:0043967","histone H4 acetylation",13,1,0,0.00365,"BP",2.43770713554353
+"Ha412HOChr16g0783391","GO:0043966","histone H3 acetylation",20,1,0.01,0.0056,"BP",2.2518119729938
+"Ha412HOChr16g0783391","GO:0048573","photoperiodism, flowering",44,1,0.01,0.0123,"BP",1.9100948885606
+"Ha412HOChr16g0783391","GO:0046686","response to cadmium ion",95,1,0.03,0.02641,"BP",1.57823159879308
+"Ha412HOChr16g0783391","GO:0006355","regulation of DNA-templated transcriptio...",1320,2,0.37,0.04533,"BP",1.34361428094131
+"Ha412HOChr16g0783691","GO:0006430","lysyl-tRNA aminoacylation",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr16g0783691","GO:0007229","integrin-mediated signaling pathway",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr16g0783691","GO:0042538","hyperosmotic salinity response",15,1,0.01,0.0053,"BP",2.27572413039921
+"Ha412HOChr16g0792041","GO:0070536","protein K63-linked deubiquitination",9,1,0,0.0025,"BP",2.60205999132796
+"Ha412HOChr16g0792041","GO:0018105","peptidyl-serine phosphorylation",76,1,0.02,0.0212,"BP",1.67366413907125
+"Ha412HOChr16g0792041","GO:0043161","proteasome-mediated ubiquitin-dependent ...",163,1,0.05,0.045,"BP",1.34678748622466
+"Ha412HOChr17g0811791","GO:0045747","positive regulation of Notch signaling p...",3,1,0,0.0011,"BP",2.95860731484178
+"Ha412HOChr17g0811791","GO:0006221","pyrimidine nucleotide biosynthetic proce...",46,1,0.02,0.016,"BP",1.79588001734408
+"Ha412HOChr17g0811791","GO:0050832","defense response to fungus",74,1,0.03,0.0257,"BP",1.59006687666871
+"Ha412HOChr17g0811791","GO:0009734","auxin-activated signaling pathway",126,1,0.04,0.0434,"BP",1.36251027048749
+"Ha412HOChr17g0854111","GO:0006538","glutamate catabolic process",7,1,0,0.0029,"BP",2.53760200210104
+"Ha412HOChr17g0854111","GO:0051560","mitochondrial calcium ion homeostasis",7,1,0,0.0029,"BP",2.53760200210104
+"Ha412HOChr17g0854111","GO:0016114","terpenoid biosynthetic process",64,1,0.03,0.0267,"BP",1.57348873863542
+"Ha412HOChr17g0854111","GO:0006887","exocytosis",94,1,0.04,0.0389,"BP",1.41005039867429
+"Ha412HOChr17g0854111","GO:0046686","response to cadmium ion",95,1,0.04,0.0394,"BP",1.40450377817443
+"hubs","GO:0035352","NAD transmembrane transport",1,1,0,0.00084,"BP",3.07572071393812
+"hubs","GO:0001680","tRNA 3'-terminal CCA addition",2,1,0,0.00168,"BP",2.77469071827414
+"hubs","GO:0048657","anther wall tapetum cell differentiation",2,1,0,0.00168,"BP",2.77469071827414
+"hubs","GO:0045747","positive regulation of Notch signaling p...",3,1,0,0.00252,"BP",2.59859945921846
+"hubs","GO:0051300","spindle pole body organization",3,1,0,0.00252,"BP",2.59859945921846
+"hubs","GO:0009729","detection of brassinosteroid stimulus",5,1,0,0.0042,"BP",2.3767507096021
+"hubs","GO:0019722","calcium-mediated signaling",8,1,0.01,0.00672,"BP",2.17263072694617
+"hubs","GO:0009911","positive regulation of flower developmen...",9,1,0.01,0.00756,"BP",2.12147820449879
+"hubs","GO:0010584","pollen exine formation",12,1,0.01,0.01006,"BP",1.99740201928009
+"hubs","GO:0010268","brassinosteroid homeostasis",13,1,0.01,0.0109,"BP",1.96257350205938
+"hubs","GO:0009690","cytokinin metabolic process",14,1,0.01,0.01173,"BP",1.93070198788447
+"hubs","GO:0000290","deadenylation-dependent decapping of nuc...",14,1,0.01,0.01173,"BP",1.93070198788447
+"hubs","GO:0010224","response to UV-B",16,1,0.01,0.0134,"BP",1.87289520163519
+"hubs","GO:1900140","regulation of seedling development",16,1,0.01,0.0134,"BP",1.87289520163519
+"hubs","GO:0009742","brassinosteroid mediated signaling pathw...",44,1,0.04,0.03645,"BP",1.43830246734601
+"hubs","GO:0006221","pyrimidine nucleotide biosynthetic proce...",46,1,0.04,0.03808,"BP",1.41930306028756
